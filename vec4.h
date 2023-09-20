@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <ostream>
+#include "matrix.h"
 using namespace std;
 
 class Vec4 {
@@ -42,6 +43,18 @@ public:
 
     uint8_t getIsDirection () const {
         return 1-isPoint;
+    }
+
+    void setX (double x) {
+        this->x = x;
+    }
+
+    void setY (double y) {
+        this->y = y;
+    }
+
+    void setZ (double z) {
+        this->z = z;
     }
 
     friend Vec4 operator+ (const Vec4 &c1, const Vec4 &c2) {
@@ -109,6 +122,95 @@ public:
                      c1.z * c2.x - c1.x * c2.z, 
                      c1.x * c2.y - c1.y * c2.x, 
                      0);
+    }
+
+    void applyMatrix (Matrix m) {
+        Vec4 aux = Vec4(0, 0, 0, 0);
+        aux.x = m.get(0, 0) * x + m.get(0, 1) * y + m.get(0, 2) * z + m.get(0, 3) * isPoint;
+        aux.y = m.get(1, 0) * x + m.get(1, 1) * y + m.get(1, 2) * z + m.get(1, 3) * isPoint;
+        aux.z = m.get(2, 0) * x + m.get(2, 1) * y + m.get(2, 2) * z + m.get(2, 3) * isPoint;
+        aux.isPoint = m.get(3, 0) * x + m.get(3, 1) * y + m.get(3, 2) * z + m.get(3, 3) * isPoint;
+
+        *this = aux;
+    }
+
+    void translate (double x, double y, double z) {
+        Matrix m = Matrix();
+        m.translationMatrix(x, y, z);
+        this->applyMatrix(m);
+    }
+
+    void scale(double x, double y, double ){
+        Matrix m = Matrix();
+        m.scaleMatrix(x, y, z);
+        this->applyMatrix(m);
+    }
+
+    void rotateX(double degrees)
+    {
+        Matrix m = Matrix();
+        m.rotateXMatrix(degrees);
+        this->applyMatrix(m);
+    }
+
+    void rotateY(double degrees)
+    {
+        Matrix m = Matrix();
+        m.rotateYMatrix(degrees);
+        this->applyMatrix(m);
+    }
+
+    void rotateZ(double degrees)
+    {
+        Matrix m = Matrix();
+        m.rotateZMatrix(degrees);
+        this->applyMatrix(m);
+    }
+
+    void baseChange (Vec4 o, Vec4 u, Vec4 v, Vec4 w) {
+        if (!o.isPoint || u.isPoint || v.isPoint || w.isPoint) {
+            cout << "Error.\n";
+        }
+        Matrix m = Matrix();
+        m.set(0, 0, u.x);
+        m.set(1, 0, u.y);
+        m.set(2, 0, u.z);
+        m.set(0, 1, v.x);
+        m.set(1, 1, v.y);
+        m.set(2, 1, v.z);
+        m.set(0, 2, w.x);
+        m.set(1, 2, w.y);
+        m.set(2, 2, w.z);
+        m.set(0, 3, o.x);
+        m.set(1, 3, o.y);
+        m.set(2, 3, o.z);
+        m.set(3, 3, 1);
+        cout << m << endl;
+        this->applyMatrix(m);
+    }
+
+    void baseChangeInverted (Vec4 o, Vec4 u, Vec4 v, Vec4 w) {
+        if (!o.isPoint || u.isPoint || v.isPoint || w.isPoint) {
+            cout << "Error.\n";
+        }
+        Matrix m = Matrix();
+        m.set(0, 0, u.x);
+        m.set(1, 0, u.y);
+        m.set(2, 0, u.z);
+        m.set(0, 1, v.x);
+        m.set(1, 1, v.y);
+        m.set(2, 1, v.z);
+        m.set(0, 2, w.x);
+        m.set(1, 2, w.y);
+        m.set(2, 2, w.z);
+        m.set(0, 3, o.x);
+        m.set(1, 3, o.y);
+        m.set(2, 3, o.z);
+        m.set(3, 3, 1);
+        m.invertMatrix();
+
+        cout << m << endl;
+        this->applyMatrix(m);
     }
 
     friend ostream &operator<< (ostream &o, const Vec4 &c){

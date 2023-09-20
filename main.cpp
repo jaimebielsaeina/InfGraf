@@ -1,22 +1,15 @@
 #include "vec4.h"
+#include "matrix.h"
 
 int main () {
     Vec4 c1 = Point(1, 4, 5);
     Vec4 c2 = Point(2, 3, 6);
     Vec4 c3 = Point(1, 2, 3);
 
-    cout << c1 << endl;
-    cout << c1 + c2 << endl;
-    cout << c1 - c2 << endl;
-    cout << c1 * 2 << endl;
-    cout << 2 * c1 << endl;
-    cout << c1 / 2 << endl;
-    cout << c1.mod() << endl;
-    cout << c2.mod() << endl;
-    cout << c1.normalize() << endl;
-    cout << c2.normalize() << endl;
-    cout << dot (c1, c2) << endl;
-    cout << cross (c1, c2) << endl;
-
-    cout << c1 << " " << c2 << endl << c1.mod() << " " << c2.mod() << endl;
+    c1.translate(3, 4, 1);
+    cout << c2 << endl;
+    c2.baseChange(Point(2, 3, 6), Direction(1, 0, 0), Direction(0, 1, 0), Direction(0, 0, 1));
+    cout << c2 << endl;
+    c2.baseChangeInverted(Point(2, 3, 6), Direction(1, 0, 0), Direction(0, 1, 0), Direction(0, 0, 1));
+    cout << c2 << endl;
 }

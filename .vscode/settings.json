@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "*.jj": "java",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "cmath": "cpp",
+        "iostream": "cpp"
     }
 }
