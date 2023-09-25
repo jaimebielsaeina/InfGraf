@@ -71,6 +71,68 @@ public:
         m[3][3] = 1;
     }
 
+    // Función para intercambiar dos filas de una matriz
+    void swapRows(Matrix matrix, int row1, int row2) {
+        for (int i = 0; i < DIM; i++) {
+            std::swap(matrix.m[row1][i], matrix.m[row2][i]);
+        }
+    }
+
+    // Función para invertir una matriz 4x4 utilizando el método de Gauss-Jordan
+    bool invertMatrix() {
+        Matrix identity = Matrix();
+        for (int i = 0; i < DIM; i++) {
+            identity.m[i][i] = 1.0;
+        }
+
+        for (int i = 0; i < DIM; i++) {
+            // Buscar el elemento pivote en la columna i
+            int pivotRow = i;
+            for (int j = i + 1; j < DIM; j++) {
+                if (std::abs(m[j][i]) > std::abs(m[pivotRow][i])) {
+                    pivotRow = j;
+                }
+            }
+
+            // Intercambiar filas si es necesario
+            if (pivotRow != i) {
+                swapRows(m, i, pivotRow);
+                swapRows(identity, i, pivotRow);
+            }
+
+            // Hacer que el elemento diagonal sea 1
+            double pivot = m[i][i];
+            if (pivot == 0.0) {
+                std::cout << "La matriz no es invertible." << std::endl;
+                return false;
+            }
+
+            for (int j = 0; j < DIM; j++) {
+                m[i][j] /= pivot;
+                identity.m[i][j] /= pivot;
+            }
+
+            // Eliminar elementos no nulos en la columna i
+            for (int j = 0; j < DIM; j++) {
+                if (j != i) {
+                    double factor = m[j][i];
+                    for (int k = 0; k < DIM; k++) {
+                        m[j][k] -= factor * m[i][k];
+                        identity.m[j][k] -= factor * identity.m[i][k];
+                    }
+                }
+            }
+        }
+
+        // La matriz original ahora contiene la matriz identidad y la inversa en 'identity'
+        for(int i = 0; i < DIM; i++){
+            for(int j = 0; j < DIM; j++){
+                m[i][j] = identity.m[i][j];
+            }
+        }
+        return true;
+    }
+    /*
     void invertMatrix () {
         double det = 0;
         for (int i = 0; i < DIM; i++) {
@@ -90,6 +152,7 @@ public:
                 m[i][j] = inv.m[i][j];
         }
     }
+    */
 
     void imageOnes () {
         for (int i = 0; i < DIM; i++)
