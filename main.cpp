@@ -1,5 +1,6 @@
 #include "vec4.h"
 #include "matrix.h"
+#include "planet.h"
 
 int main () {
     Vec4 c1 = Point(1, 4, 5);

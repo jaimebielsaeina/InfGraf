@@ -71,6 +71,17 @@ public:
         return Vec4(c1.x - c2.x, c1.y - c2.y, c1.z - c2.z, c1.isPoint);
     }
 
+    friend Vec4 operator- (const Vec4 &c) {
+        return Vec4(-c.x, -c.y, -c.z, c.isPoint);
+    }
+
+    friend Vec4 distance (Vec4 p1, Vec4 p2) {
+        if (!p1.isPoint || !p2.isPoint) {
+            cout << "Error: both operands must be points.\n";
+        }
+        return Vec4(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z, 0);
+    }
+
     friend Vec4 operator* (const Vec4 &c, const double &s) {
         if(c.isPoint){
             cout << "Error: Vec4 operand must be a direction.\n";
@@ -93,7 +104,7 @@ public:
         return c / s;
     }
 
-    double mod() {
+    double mod() const {
         if (isPoint) {
             cout << "Error: Vec4 operand must be a direction.\n";
         }
@@ -211,6 +222,14 @@ public:
 
         cout << m << endl;
         this->applyMatrix(m);
+    }
+
+    // devuelve el angulo entre dos direcciones en grados
+    friend double angleBetweenDirections (const Vec4 &c1, const Vec4 &c2) {
+        if(c1.isPoint || c2.isPoint){
+            cout << "Error: both operands must be directions.\n";
+        }
+        return acos(dot(c1, c2) / (c1.mod() * c2.mod())) * 180 / M_PI;
     }
 
     friend ostream &operator<< (ostream &o, const Vec4 &c){
