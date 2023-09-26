@@ -27,10 +27,13 @@ class Planet {
 
     Point center;
     Direction axis;
-    Point meridian;
+    double meridian;
 
 public:
-    Planet (Point center, Direction axis, Point meridian) : center(center), axis(axis), meridian(meridian) {}
+    // guarda el centro, el eje  y el meridiano como el angulo de desplaxamiento respecto del eje y
+    Planet (Point center, Direction axis, Point meridian) : center(center), axis(axis), meridian() {
+        
+    }
     Point getCenter () const {
         return center;
     }

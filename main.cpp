@@ -13,4 +13,10 @@ int main () {
     cout << c2 << endl;
     c2.baseChangeInverted(Point(2, 3, 6), Direction(1, 0, 0), Direction(0, 1, 0), Direction(0, 0, 1));
     cout << c2 << endl;
+
+    Planet p1 = Planet(Point(0, 0, 0), Direction(0, 0, 1), Point(1, 0, 0));
+    Planet p2 = Planet(Point(3, 0, 0), Direction(0, 0, 1), Point(2, 0, 0));
+    cout << p1.city(0, 0) << endl;
+    cout << p2.city(0, 0) << endl;
+    cout << crossed(p1, 0, 0, p2, 180, 0) << endl;
 }
