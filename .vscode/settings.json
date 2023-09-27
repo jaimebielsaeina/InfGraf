@@ -3,6 +3,7 @@
         "*.jj": "java",
         "ostream": "cpp",
         "cmath": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "*.tcc": "cpp"
     }
 }
