@@ -27,12 +27,15 @@ class Planet {
 
     Point center;
     Direction axis;
-    double meridian;
+    Point meridian;
 
 public:
     // guarda el centro, el eje  y el meridiano como el angulo de desplaxamiento respecto del eje y
-    Planet (Point center, Direction axis, Point meridian) : center(center), axis(axis), meridian() {
-        
+    Planet (Point center, Direction axis, Point meridian) : center(center), axis(axis), meridian(meridian) {
+        if (abs((distance(center, meridian)).mod() - axis.mod()/2) > 0.000001) {
+            cout << "La ciudad de referencia no está en la superficie del planeta." << endl;
+            exit(1);
+        }
     }
     Point getCenter () const {
         return center;
@@ -44,6 +47,9 @@ public:
         return meridian;
     }
     Point city (double theta, double phi) const {
+        // cambio de base para que el planeta sea el centro del sistema de coordenadas
+        // calcular donde se encuentra el punto
+        // revertir el cambio de base para obtener las coordenadas del punto en el sistema de coordenadas original
         return Point(center.getX() + cos(theta) * cos(phi) * meridian.getX() + sin(theta) * cos(phi) * axis.getX() + sin(phi) * axis.getX(),
                     center.getY() + cos(theta) * cos(phi) * meridian.getY() + sin(theta) * cos(phi) * axis.getY() + sin(phi) * axis.getY(),
                     center.getZ() + cos(theta) * cos(phi) * meridian.getZ() + sin(theta) * cos(phi) * axis.getZ() + sin(phi) * axis.getZ());
