@@ -235,9 +235,10 @@ void transform_clamp_equal(string inFile, string outFile, int threshold){
 }
 
 void gamma(double &r, double &g, double &b, double gamma_coef){
-    r = pow (r, 1/gamma_coef);
-    g = pow (g, 1/gamma_coef);
-    b = pow (b, 1/gamma_coef);
+    double factor = 255.0 / pow(255.0, 1/gamma_coef);
+    r = pow (r, 1/gamma_coef) * factor;
+    g = pow (g, 1/gamma_coef) * factor;
+    b = pow (b, 1/gamma_coef) * factor;
 }
 
 void transform_gamma(string inFile, string outFile, double gamma_coef){
@@ -315,13 +316,13 @@ void transform_gamma(string inFile, string outFile, double gamma_coef){
             g = g * m / c;
             b = b * m / c;
             
-            equalization(r, g, b, max);
+            equalization (r, g, b, max);
             
             r *= 255;
             g *= 255;
             b *= 255;
 
-            gamma(r, g, b, gamma_coef);
+            gamma (r, g, b, gamma_coef);
 
             ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
         }
