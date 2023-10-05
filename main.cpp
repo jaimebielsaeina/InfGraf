@@ -1,6 +1,7 @@
 #include "vec4.h"
 #include "matrix.h"
 #include "planet.h"
+#include "figure.h"
 
 int main () {
     Vec4 c1 = Point(1, 4, 5);
@@ -19,4 +20,12 @@ int main () {
     cout << p1.city(0, 0) << endl;
     cout << p2.city(0, 0) << endl;
     cout << crossed(p1, 0, 0, p2, 180, 0) << endl;
+
+    Ray r = Ray(Point(0, 0, 0), Direction(1, 0, 0));
+    Plane pl = Plane(Point(4, 0, 0), Direction(-1, 0, 0));
+    float t;
+    cout << pl.intersect(r, t) << " " << t << endl;
+    Sphere sp = Sphere(Point(4, 1.001, 0), 1);
+    cout << sp.intersect(r, t) << " " << t << endl;
+
 }
