@@ -1,5 +1,6 @@
 #pragma once
 #ifndef PLANET_H
+#define PLANET_H
 #include "vec4.h"
 
 class BasicPlanet {

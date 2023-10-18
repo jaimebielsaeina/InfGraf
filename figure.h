@@ -1,6 +1,16 @@
 #pragma once
-#ifndef Figure_H
+#ifndef FIGURE_H
+#define FIGURE_H
 #include "vec4.h"
+
+class Color {
+public:
+    char r, g, b;
+    Color(char r, char g, char b) : r(r), g(g), b(b) {}
+    Color() : r(0), g(0), b(0) {}
+    ~Color() {}
+};
+
 
 class Ray {
 
@@ -19,7 +29,10 @@ public:
 class Figure {
 
 public:
+    Color color;
+public:
     virtual bool intersect(const Ray& ray, float& t) const = 0;
+    Figure (const Color& color) : color(color) {}
     virtual ~Figure() {}
 
 };
@@ -28,10 +41,11 @@ class Plane : public Figure {
 
     Point p;
     Direction n;
+    
 
 public:
-    Plane(const Point& p, const Direction& n) : p(p), n(n) {
-        Point pAux = p + 1e-6*n;
+    Plane(const Point& p, const Direction& n, const Color& color) : p(p), n(n), Figure(color) {
+        //Point pAux = p + 1e-6*n;
     }
     bool intersect(const Ray& ray, float& t) const {
         float denom = abs(dot(ray.getDirection(), n));
@@ -48,9 +62,10 @@ class Sphere : public Figure {
 
     Point c;
     float r;
+    Color color;
 
 public:
-    Sphere(const Point& c, float r) : c(c), r(r) {}
+    Sphere(const Point& c, float r, const Color& color) : c(c), r(r), Figure(color) {}
     bool intersect(const Ray& ray, float& t) const {
         Vec4 oc = distance(ray.getPoint(), c);
         float a = dot(ray.getDirection(), ray.getDirection());
@@ -73,4 +88,4 @@ public:
 
 };
 
-#endif // Figure_H
+#endif // FIGURE_H

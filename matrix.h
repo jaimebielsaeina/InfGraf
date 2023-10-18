@@ -1,5 +1,6 @@
 #pragma once
 #ifndef MATRIX_H
+#define MATRIX_H
 #define DIM 4
 #include <iostream>
 #include <ostream>

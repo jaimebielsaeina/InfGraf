@@ -1,5 +1,6 @@
 #pragma once
-#ifndef Vec4_H
+#ifndef VEC4_H
+#define VEC4_H
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -9,6 +10,8 @@
 using namespace std;
 
 class Vec4 {
+
+protected:
     double x, y, z;
     uint8_t isPoint;
 
@@ -242,12 +245,20 @@ class Point : public Vec4 {
 public:
     Point () : Vec4(0, 0, 0, 1) {}
     Point (double x, double y, double z) : Vec4(x, y, z, 1) {}
+    Point (Vec4 v) : Vec4(v.getX(), v.getY(), v.getZ(), 1) {}
+    friend Vec4 toVec4 (Point p) {
+        return Vec4(p.getX(), p.getY(), p.getZ(), 1);
+    }
 };
 
 class Direction : public Vec4 {
 public:
     Direction () : Vec4(0, 0, 0, 0) {}
     Direction (double x, double y, double z) : Vec4(x, y, z, 0) {}
+    Direction (Vec4 v) : Vec4(v.getX(), v.getY(), v.getZ(), 0) {}
+    friend Vec4 toVec4 (Direction d) {
+        return Vec4(d.getX(), d.getY(), d.getZ(), 0);
+    }
 };
 
-#endif // Vec4_H
+#endif // VEC4_H
