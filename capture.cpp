@@ -1,13 +1,14 @@
 #include "vec4.h"
 #include "figure.h"
 #include "camera.h"
+#include "randomGenerator.h"
 #include <list>
 #include <iostream>
 #include <fstream>
 #include <string>
 
 // Capture the scene from the camera's point of view
-void capture(Camera& camera, list<Figure*> figures, string fileName) {
+void capture(Camera& camera, list<Figure*> figures, int raysPerPixel, string fileName) {
 	std::ofstream output(fileName);
 	output << "P3" << endl;
 	//output << "# MAX" << endl;
@@ -17,23 +18,28 @@ void capture(Camera& camera, list<Figure*> figures, string fileName) {
 	Vec4 modL = camera.l.normalize(); 
     Vec4 modU = camera.u.normalize();
 	Vec4 sightOrigin = camera.f + camera.l + camera.u;
+	randomGenerator rand(0, 1);
+	int r, g, b;
 	for (int i = 0; i < camera.height; i++) {
 		cout << i << endl;
 		for (int j = 0; j < camera.width; j++) {
-			Ray ray = Ray(camera.o, Direction(sightOrigin - (j+0.5)*camera.widthPerPixel*modL - (i+0.5)*camera.heightPerPixel*modU));
-			float t, minT = 1e6;
-			Figure* closestFigure = nullptr;
-			for (Figure* figure : figures) {
-				if (figure->intersect(ray, t) && t < minT) {
-					minT = t;
-					closestFigure = figure;
+			r = 0; g = 0; b = 0;
+			for (int k = 0; k < raysPerPixel; k++) {
+				Ray ray = Ray(camera.o, Direction(sightOrigin - (j+rand.get())*camera.widthPerPixel*modL - (i+rand.get())*camera.heightPerPixel*modU));
+				float t, minT = 1e6;
+				Figure* closestFigure = nullptr;
+				for (Figure* figure : figures)
+					if (figure->intersect(ray, t) && t < minT) {
+						minT = t;
+						closestFigure = figure;
+				}
+				if (closestFigure != nullptr) {
+					r += closestFigure->color.r;
+					g += closestFigure->color.g;
+					b += closestFigure->color.b;
 				}
 			}
-			if (closestFigure != nullptr) {
-				output << (int)closestFigure->color.r << " " << (int)closestFigure->color.g << " " << (int)closestFigure->color.b << "    ";
-			} else {
-				output << "0 0 0    ";
-			}
+			output << r/raysPerPixel << " " << g/raysPerPixel << " " << b/raysPerPixel << "    ";
 		}
 		output << endl;
 	}
@@ -63,5 +69,5 @@ int main() {
     listFigures.push_back(leftSphere);
     listFigures.push_back(rightSphere);
 
-    capture(camera, listFigures, "output.ppm");
+    capture(camera, listFigures, 16, "output.ppm");
 }
