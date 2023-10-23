@@ -48,9 +48,9 @@ public:
         //Point pAux = p + 1e-6*n;
     }
     bool intersect(const Ray& ray, float& t) const {
-        float denom = abs(dot(ray.getDirection(), n));
-        if (denom > 1e-6) {
-            t = dot(distance(ray.getPoint(), p), n) / denom;
+        float denom = dot(ray.getDirection(), n);
+        if (abs(denom) > 1e-6) {
+            t = - dot(distance(ray.getPoint(), p), n) / denom;
             return t >= 0;
         }
         return false; // porque son prependiculares
