@@ -14,7 +14,7 @@ public:
 public:
 
 	Camera (const Point& origin, const Direction& left, const Direction& up, const Direction& forward, int width, int height) :
-		o(o), l(l), u(u), f(f), width(width), height(height),
+		o(origin), l(left), u(up), f(forward), width(width), height(height),
 		widthPerPixel(2*toVec4(left).mod() / width), heightPerPixel(2*toVec4(up).mod() / height)
 	{
 		if (dot(l, u) != 0 || dot(l, f) != 0 || dot(u, f) != 0) {

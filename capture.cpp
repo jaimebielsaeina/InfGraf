@@ -17,6 +17,7 @@ void capture(Camera& camera, list<Figure*> figures, string fileName) {
     Vec4 modU = camera.u.normalize();
 	Vec4 sightOrigin = camera.f + camera.l + camera.u;
 	for (int i = 0; i < camera.width; i++) {
+		cout << i << endl;
 		for (int j = 0; j < camera.height; j++) {
 			Ray ray = Ray(camera.o, Direction(sightOrigin - (i+0.5)*camera.widthPerPixel*modL - (j+0.5)*camera.heightPerPixel*modU));
 			float t, minT = 1e6;
@@ -24,18 +25,18 @@ void capture(Camera& camera, list<Figure*> figures, string fileName) {
 			for (Figure* figure : figures) {
 				if (figure->intersect(ray, t) && t < minT) {
 					minT = t;
-					*closestFigure = *figure;
+					closestFigure = figure;
 				}
 			}
 			if (closestFigure != nullptr) {
-				output << closestFigure->color.r << " " << closestFigure->color.g << " " << closestFigure->color.b << "\t";
+				output << (int)closestFigure->color.r << " " << (int)closestFigure->color.g << " " << (int)closestFigure->color.b << "    ";
 			} else {
-				output << "0 0 0\t";
+				output << "0 0 0    ";
 			}
-			cout << i << " " << j << endl;
 		}
 		output << endl;
 	}
+	output.close();
 }
 
 int main() {
