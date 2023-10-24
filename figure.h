@@ -119,4 +119,122 @@ public:
 
 };
 
+class Disc : public Figure {
+
+    Point c;
+    Direction n;
+    float r;
+
+public:
+    Disc (const Point& center, const Direction& normal, float radius, const Color& color)
+        : c(center), n(normal.normalize()), r(radius), Figure(color) {}
+
+    bool intersect(const Ray& ray, float& t) const {
+        float denom = dot(ray.getDirection(), n);
+        if (abs(denom) > 1e-6) {
+            t = - dot(distance(ray.getPoint(), c), n) / denom;
+            if (t < 0) return false;
+            Point p = ray(t);
+            if (dot(distance(p, c), distance(p, c)) <= r * r)
+                return true;
+            return false;
+        }
+        return false; // porque son prependiculares
+    }
+};
+
+class PerforedDisc : public Figure {
+
+    Point c;
+    Direction n;
+    float r;
+    float rp;
+
+public:
+    PerforedDisc (const Point& center, const Direction& normal, float radius, float radiusPerforation, const Color& color)
+        : c(center), n(normal.normalize()), r(radius), rp(radiusPerforation), Figure(color) {}
+    bool intersect(const Ray& ray, float& t) const {
+        float denom = dot(ray.getDirection(), n);
+        if (abs(denom) > 1e-6) {
+            t = - dot(distance(ray.getPoint(), c), n) / denom;
+            if (t < 0) return false;
+            Point p = ray(t);
+            if (dot(distance(p, c), distance(p, c)) <= r * r && dot(distance(p, c), distance(p, c)) >= rp * rp)
+                return true;
+            return false;
+        }
+        return false; // porque son prependiculares
+    }
+};
+
+class Cylinder : public Figure {
+
+    Point c;      // Centro del cilindro
+    Direction ax; // Vector de dirección del eje del cilindro
+    float r;      // Radio del cilindro
+    float h;      // Altura del cilindro
+
+public:
+    Cylinder (const Point& center, const Direction& axis, float radius, float height, const Color& color)
+        : c(center), ax(axis.normalize()), r(radius), h(height/2), Figure(color) {}
+    bool intersect(const Ray& ray, float& t) const {
+        Vec4 oc = distance(ray.getPoint(), c);
+        float a = dot(ray.getDirection(), ray.getDirection()) - dot(ray.getDirection(), ax) * dot(ray.getDirection(), ax);
+        float b = 2 * (dot(oc, ray.getDirection()) - dot(oc, ax) * dot(ray.getDirection(), ax));
+        float g = dot(oc, oc) - dot(oc, ax) * dot(oc, ax) - r * r;
+        float discriminant = b * b - 4 * a * g;
+        if (discriminant < 0) {
+            return false;
+        }
+        else {
+            float t1 = (-b - sqrt(discriminant)) / (2 * a);
+            float t2 = (-b + sqrt(discriminant)) / (2 * a);
+            if (t1 < 0 && t2 < 0)
+                return false;
+            if (t1 >= 0) t = t1;
+            if (t2 < t1 && t2 >= 0) t = t2;
+            Point p = ray(t);
+            if (dot(distance(p, c), ax) < -h || dot(distance(p, c), ax) > h)
+                return false;
+            return true;
+        }
+    }
+};
+
+class Cone : public Figure {
+
+    Point c;      // Centro del cono
+    Direction ax; // Vector de dirección del eje del cono
+    float r;      // Radio del cono
+    float h;      // Altura del cono
+
+public:
+
+    Cone (const Point& center, const Direction& axis, float radius, float height, const Color& color)
+        : c(center), ax(axis.normalize()), r(radius), h(height), Figure(color) {}
+    
+    bool intersect(const Ray& ray, float& t) const {
+        Vec4 oc = distance(ray.getPoint(), c);
+        float a = dot(ray.getDirection(), ray.getDirection()) - (1 + r * r / (h * h)) * dot(ray.getDirection(), ax) * dot(ray.getDirection(), ax);
+        float b = 2 * (dot(oc, ray.getDirection()) - (1 + r * r / (h * h)) * dot(oc, ax) * dot(ray.getDirection(), ax));
+        float g = dot(oc, oc) - (1 + r * r / (h * h)) * dot(oc, ax) * dot(oc, ax);
+        float discriminant = b * b - 4 * a * g;
+        if (discriminant < 0) {
+            return false;
+        }
+        else {
+            float t1 = (-b - sqrt(discriminant)) / (2 * a);
+            float t2 = (-b + sqrt(discriminant)) / (2 * a);
+            if (t1 < 0 && t2 < 0)
+                return false;
+            if (t1 >= 0) t = t1;
+            if (t2 < t1 && t2 >= 0) t = t2;
+            Point p = ray(t);
+            if (dot(distance(p, c), ax) < 0 || dot(distance(p, c), ax) > h)
+                return false;
+            return true;
+        }
+    }
+};
+
 #endif // FIGURE_H

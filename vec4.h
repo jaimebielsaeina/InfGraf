@@ -114,7 +114,7 @@ public:
         return sqrt(x * x + y * y + z * z);
     }
 
-    Vec4 normalize() {
+    Vec4 normalize() const {
         if (isPoint) {
             cout << "Error: Vec4 operand must be a direction.\n";
         }

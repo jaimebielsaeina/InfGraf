@@ -49,7 +49,7 @@ void capture(Camera& camera, list<Figure*> figures, int raysPerPixel, string fil
 int main() {
     list<Figure*> listFigures = {};
 
-    Camera camera = Camera(Point(0, 0, -3.5), Direction(-1, 0, 0), Direction(0, 1, 0), Direction(0, 0, 3), 1024, 1024);
+    Camera camera = Camera(Point(0, 0, -3.5), Direction(-1, 0, 0), Direction(0, 1, 0), Direction(0, 0, 3), 256, 256);
 
 	Plane* leftPlane = new Plane(Point(-1, 0, 0), Direction(1, 0, 0), Color(255, 0, 0));
     Plane* rightPlane = new Plane(Point(1, 0, 0), Direction(-1, 0, 0), Color(0, 255, 0));
@@ -63,6 +63,13 @@ int main() {
 
 	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 0), Point(-0.25, 1, 0), Color(255, 127, 0));
 
+	Disc* disc = new Disc(Point(-0.6, 0.6, 0), Direction(-1, 1, 1), 0.2, Color(0, 0, 0));
+	PerforedDisc* perforedDisc = new PerforedDisc(Point(-0.6, 0.2, -0.2), Direction(1, 1, 1), 0.3, 0.2, Color(0, 0, 0));
+
+	Cylinder* cylinder = new Cylinder(Point(-0.5, 0, 0.4), Direction(3, 10, 0), 0.2, 1.5, Color(127, 0, 255));
+
+	Cone* cone = new Cone (Point(0.5, -0.5, 0), Direction(0, 1, 0), 0.5, 1, Color(128, 0, 0));
+
     listFigures.push_back(leftPlane);
     listFigures.push_back(rightPlane);
     listFigures.push_back(floorPlane);
@@ -74,6 +81,10 @@ int main() {
 	listFigures.push_back(centerSphere);
 
 	listFigures.push_back(triangle);
+	listFigures.push_back(disc);
+	listFigures.push_back(perforedDisc);
+	listFigures.push_back(cylinder);
+	listFigures.push_back(cone);
 
     capture(camera, listFigures, 16, "output.ppm");
 }
