@@ -88,4 +88,35 @@ public:
 
 };
 
+class Triangle : public Figure {
+
+    Point p1, p2, p3;
+    Direction n;
+
+public:
+
+    Triangle(const Point& p1, const Point& p2, const Point& p3, const Color& color) :
+            p1(p1), p2(p2), p3(p3), Figure(color),
+            n(cross(distance(p2, p1), distance(p3, p1))) {}
+    bool intersect(const Ray& ray, float& t) const {
+        float denom = dot(ray.getDirection(), n);
+        if (abs(denom) > 1e-6) {
+            t = - dot(distance(ray.getPoint(), p1), n) / denom;
+            if (t < 0) return false;
+            Point p = ray(t);
+            Vec4 v1 = distance(p2, p1);
+            Vec4 v2 = distance(p3, p2);
+            Vec4 v3 = distance(p1, p3);
+            Vec4 v4 = distance(p, p1);
+            Vec4 v5 = distance(p, p2);
+            Vec4 v6 = distance(p, p3);
+            if (dot(cross(v1, v4), n) >= 0 && dot(cross(v2, v5), n) >= 0 && dot(cross(v3, v6), n) >= 0)
+                return true;
+            return false;
+        }
+        return false; // porque son prependiculares
+    }
+
+};
+
 #endif // FIGURE_H

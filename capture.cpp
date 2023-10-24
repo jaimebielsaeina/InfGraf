@@ -49,7 +49,7 @@ void capture(Camera& camera, list<Figure*> figures, int raysPerPixel, string fil
 int main() {
     list<Figure*> listFigures = {};
 
-    Camera camera = Camera(Point(0, 0, -3.5), Direction(-1, 0, 0), Direction(0, 1, 0), Direction(0, 0, 3), 256, 256);
+    Camera camera = Camera(Point(0, 0, -3.5), Direction(-1, 0, 0), Direction(0, 1, 0), Direction(0, 0, 3), 1024, 1024);
 
 	Plane* leftPlane = new Plane(Point(-1, 0, 0), Direction(1, 0, 0), Color(255, 0, 0));
     Plane* rightPlane = new Plane(Point(1, 0, 0), Direction(-1, 0, 0), Color(0, 255, 0));
@@ -59,6 +59,9 @@ int main() {
 
     Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(255, 0, 255));
     Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0, 255, 255));
+    Sphere* centerSphere = new Sphere(Point(0, -0.5, 0), 0.5, Color(255, 255, 0));
+
+	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 0), Point(-0.25, 1, 0), Color(255, 127, 0));
 
     listFigures.push_back(leftPlane);
     listFigures.push_back(rightPlane);
@@ -68,6 +71,9 @@ int main() {
 
     listFigures.push_back(leftSphere);
     listFigures.push_back(rightSphere);
+	listFigures.push_back(centerSphere);
+
+	listFigures.push_back(triangle);
 
     capture(camera, listFigures, 16, "output.ppm");
 }
