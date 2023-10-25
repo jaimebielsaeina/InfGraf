@@ -2,14 +2,7 @@
 #ifndef FIGURE_H
 #define FIGURE_H
 #include "vec4.h"
-
-class Color {
-public:
-    uint8_t r, g, b;
-    Color(uint8_t r, uint8_t g, uint8_t b) : r(r), g(g), b(b) {}
-    Color() : r(0), g(0), b(0) {}
-    ~Color() {}
-};
+#include "color.h"
 
 
 class Ray {
@@ -32,6 +25,7 @@ public:
     Color color;
 public:
     virtual bool intersect(const Ray& ray, float& t) const = 0;
+    virtual Direction getNormal(const Point& p) const = 0;
     Figure (const Color& color) : color(color) {}
     virtual ~Figure() {}
 
@@ -66,6 +60,11 @@ class Plane : public Figure {
 public:
     Plane (const Direction& normal, float distance, const Color& color) :
             n(normal.normalize()), d(distance), Figure(color) {}
+            
+    Direction getNormal(const Point& p) const {
+        return n;
+    }
+
     bool intersect(const Ray& ray, float& t) const {
         float denom = dot(ray.getDirection(), n);
         if (abs(denom) > 1e-6) {
@@ -85,6 +84,12 @@ class Sphere : public Figure {
 public:
     Sphere(const Point& c, float r, const Color& color) :
             c(c), r(r), Figure(color) {}
+
+    Direction getNormal(const Point& p) const {
+        
+        return distance(p, c).normalize();
+    }
+    
     bool intersect(const Ray& ray, float& t) const {
         Vec4 oc = distance(ray.getPoint(), c);
         float a = dot(ray.getDirection(), ray.getDirection());
@@ -117,6 +122,11 @@ public:
     Triangle(const Point& p1, const Point& p2, const Point& p3, const Color& color) :
             p1(p1), p2(p2), p3(p3), Figure(color),
             n(cross(distance(p2, p1), distance(p3, p1))) {}
+
+    Direction getNormal(const Point& p) const {
+        return n;
+    }
+
     bool intersect(const Ray& ray, float& t) const {
         float denom = dot(ray.getDirection(), n);
         if (abs(denom) > 1e-6) {
@@ -148,6 +158,10 @@ public:
     Disc (const Point& center, const Direction& normal, float radius, const Color& color)
         : c(center), n(normal.normalize()), r(radius), Figure(color) {}
 
+    Direction getNormal(const Point& p) const {
+        return n;
+    }
+
     bool intersect(const Ray& ray, float& t) const {
         float denom = dot(ray.getDirection(), n);
         if (abs(denom) > 1e-6) {
@@ -172,6 +186,11 @@ class PerforedDisc : public Figure {
 public:
     PerforedDisc (const Point& center, const Direction& normal, float radius, float radiusPerforation, const Color& color)
         : c(center), n(normal.normalize()), r(radius), rp(radiusPerforation), Figure(color) {}
+
+    Direction getNormal(const Point& p) const {
+        return n;
+    }
+
     bool intersect(const Ray& ray, float& t) const {
         float denom = dot(ray.getDirection(), n);
         if (abs(denom) > 1e-6) {
@@ -196,6 +215,10 @@ class Cylinder : public Figure {
 public:
     Cylinder (const Point& center, const Direction& axis, float radius, float height, const Color& color)
         : c(center), ax(axis.normalize()), r(radius), h(height/2), Figure(color) {}
+
+    Direction getNormal(const Point& p) const {
+        return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
+    }
     bool intersect(const Ray& ray, float& t) const {
         Vec4 oc = distance(ray.getPoint(), c);
         float a = dot(ray.getDirection(), ray.getDirection()) - dot(ray.getDirection(), ax) * dot(ray.getDirection(), ax);
@@ -231,6 +254,10 @@ public:
 
     Cone (const Point& center, const Direction& axis, float radius, float height, const Color& color)
         : c(center), ax(axis.normalize()), r(radius), h(height), Figure(color) {}
+
+    Direction getNormal(const Point& p) const {
+        return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
+    }
     
     bool intersect(const Ray& ray, float& t) const {
         Vec4 oc = distance(ray.getPoint(), c);

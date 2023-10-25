@@ -227,12 +227,12 @@ public:
         this->applyMatrix(m);
     }
 
-    // devuelve el angulo entre dos direcciones en grados
+    // devuelve el angulo entre dos direcciones en radianes
     friend double angleBetweenDirections (const Vec4 &c1, const Vec4 &c2) {
         if(c1.isPoint || c2.isPoint){
             cout << "Error: both operands must be directions.\n";
         }
-        return acos(dot(c1, c2) / (c1.mod() * c2.mod())) * 180 / M_PI;
+        return acos(dot(c1, c2) / (c1.mod() * c2.mod()));
     }
 
     friend ostream &operator<< (ostream &o, const Vec4 &c){
