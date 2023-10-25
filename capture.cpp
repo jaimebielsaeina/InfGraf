@@ -51,11 +51,11 @@ int main() {
 
     Camera camera = Camera(Point(0, 0, -3.5), Direction(-1, 0, 0), Direction(0, 1, 0), Direction(0, 0, 3), 256, 256);
 
-	Plane* leftPlane = new Plane(Point(-1, 0, 0), Direction(1, 0, 0), Color(255, 0, 0));
-    Plane* rightPlane = new Plane(Point(1, 0, 0), Direction(-1, 0, 0), Color(0, 255, 0));
-    Plane* floorPlane = new Plane(Point(0, -1, 0), Direction(0, 1, 0), Color(200, 200, 200));
-    Plane* ceilingPlane = new Plane(Point(0, 1, 0), Direction(0, -1, 0), Color(200, 200, 200));
-    Plane* backPlane = new Plane(Point(0, 0, 1), Direction(0, 0, -1), Color(200, 200, 200));
+	Plane* leftPlane = new Plane(Direction(1, 0, 0), 1, Color(255, 0, 0));
+    Plane* rightPlane = new Plane(Direction(-1, 0, 0), 1, Color(0, 255, 0));
+    Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(200, 200, 200));
+    Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(200, 200, 200));
+    Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(200, 200, 200));
 
     Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(255, 0, 255));
     Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0, 255, 255));

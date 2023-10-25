@@ -37,7 +37,7 @@ public:
 
 };
 
-class Plane : public Figure {
+/*class Plane : public Figure {
 
     Point p;
     Direction n;
@@ -56,6 +56,24 @@ public:
         return false; // porque son prependiculares
     }
 
+};*/
+
+class Plane : public Figure {
+    
+    Direction n;
+    float d;
+
+public:
+    Plane (const Direction& normal, float distance, const Color& color) :
+            n(normal.normalize()), d(distance), Figure(color) {}
+    bool intersect(const Ray& ray, float& t) const {
+        float denom = dot(ray.getDirection(), n);
+        if (abs(denom) > 1e-6) {
+            t = -(d - dot(distance(Point(0,0,0), ray.getPoint()), n)) / denom;
+            return t >= 0;
+        }
+        return false; // porque son prependiculares
+    }
 };
 
 class Sphere : public Figure {
@@ -65,7 +83,8 @@ class Sphere : public Figure {
     Color color;
 
 public:
-    Sphere(const Point& c, float r, const Color& color) : c(c), r(r), Figure(color) {}
+    Sphere(const Point& c, float r, const Color& color) :
+            c(c), r(r), Figure(color) {}
     bool intersect(const Ray& ray, float& t) const {
         Vec4 oc = distance(ray.getPoint(), c);
         float a = dot(ray.getDirection(), ray.getDirection());
