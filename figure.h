@@ -73,6 +73,10 @@ public:
         }
         return false; // porque son prependiculares
     }
+
+    bool makesShadowItself(const Ray& ray) const {
+        return false;
+    }
 };
 
 class Sphere : public Figure {
@@ -107,6 +111,22 @@ public:
             if (t1 >= 0) t = t1;
             if (t2 < t1 && t2 >= 0) t = t2;
             return true;
+        }
+    }
+
+    bool makesShadowItself(const Ray& ray) const {
+        Vec4 oc = distance(ray.getPoint(), c);
+        float a = dot(ray.getDirection(), ray.getDirection());
+        float b = 2 * dot(oc, ray.getDirection());
+        float c = dot(oc, oc) - r * r;
+        float discriminant = b * b - 4 * a * c;
+        if (discriminant < 0) {
+            return false;
+        }
+        else {
+            float t1 = (-b - sqrt(discriminant)) / (2 * a);
+            float t2 = (-b + sqrt(discriminant)) / (2 * a);
+            return (t1 > 1e-3 || t2 > 1e-3);
         }
     }
 
@@ -146,6 +166,10 @@ public:
         return false; // porque son prependiculares
     }
 
+    bool makesShadowItself(const Ray& ray) const {
+        return false;
+    }
+
 };
 
 class Disc : public Figure {
@@ -173,6 +197,10 @@ public:
             return false;
         }
         return false; // porque son prependiculares
+    }
+
+    bool makesShadowItself(const Ray& ray) const {
+        return false;
     }
 };
 
@@ -202,6 +230,10 @@ public:
             return false;
         }
         return false; // porque son prependiculares
+    }
+
+    bool makesShadowItself(const Ray& ray) const {
+        return false;
     }
 };
 
@@ -239,6 +271,22 @@ public:
             if (dot(distance(p, c), ax) < -h || dot(distance(p, c), ax) > h)
                 return false;
             return true;
+        }
+    }
+
+    bool makesShadowItself(const Ray& ray) const {
+        Vec4 oc = distance(ray.getPoint(), c);
+        float a = dot(ray.getDirection(), ray.getDirection()) - dot(ray.getDirection(), ax) * dot(ray.getDirection(), ax);
+        float b = 2 * (dot(oc, ray.getDirection()) - dot(oc, ax) * dot(ray.getDirection(), ax));
+        float g = dot(oc, oc) - dot(oc, ax) * dot(oc, ax) - r * r;
+        float discriminant = b * b - 4 * a * g;
+        if (discriminant < 0) {
+            return false;
+        }
+        else {
+            float t1 = (-b - sqrt(discriminant)) / (2 * a);
+            float t2 = (-b + sqrt(discriminant)) / (2 * a);
+            return (t1 > 1e-6 || t2 > 1e-6);
         }
     }
 };
@@ -279,6 +327,22 @@ public:
             if (dot(distance(p, c), ax) < 0 || dot(distance(p, c), ax) > h)
                 return false;
             return true;
+        }
+    }
+
+    bool makesShadowItself(const Ray& ray) const {
+        Vec4 oc = distance(ray.getPoint(), c);
+        float a = dot(ray.getDirection(), ray.getDirection()) - (1 + r * r / (h * h)) * dot(ray.getDirection(), ax) * dot(ray.getDirection(), ax);
+        float b = 2 * (dot(oc, ray.getDirection()) - (1 + r * r / (h * h)) * dot(oc, ax) * dot(ray.getDirection(), ax));
+        float g = dot(oc, oc) - (1 + r * r / (h * h)) * dot(oc, ax) * dot(oc, ax);
+        float discriminant = b * b - 4 * a * g;
+        if (discriminant < 0) {
+            return false;
+        }
+        else {
+            float t1 = (-b - sqrt(discriminant)) / (2 * a);
+            float t2 = (-b + sqrt(discriminant)) / (2 * a);
+            return (t1 > 1e-6 || t2 > 1e-6);
         }
     }
 };
