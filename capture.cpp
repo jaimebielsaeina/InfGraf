@@ -45,6 +45,13 @@ void capture(Camera& camera, list<Figure*> figures, list<LightSource*> lightSour
 
 						bool shadow = false;
 						float t2;
+
+						// Check if the plane is against the light.
+						if (closestFigure->planeAgainstLight(camera, *light)) {
+							shadow = true;
+							break;
+						} else
+
 						// Check if the point is in shadow.
 						for (Figure* figure : figures)
 								if (figure->intersect(Ray(light->center, -distanceToLight), t2)
@@ -110,7 +117,7 @@ int main() {
 
     Sphere* centerSphere = new Sphere(Point(0, -0.5, 0), 0.5, Color(255, 255, 0));
 
-	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 0), Point(-0.25, 1, 0), Color(255, 127, 0));
+	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 1), Point(-0.25, 1, 0), Color(255, 127, 0));
 
 	Disc* disc = new Disc(Point(-0.6, 0.6, 0), Direction(-2, 1, 1), 0.2, Color(0, 255, 255));
 	PerforedDisc* perforedDisc = new PerforedDisc(Point(-0.6, 0.2, -0.2), Direction(1, 1, 1), 0.3, 0.2, Color(0, 255, 255));
@@ -130,16 +137,16 @@ int main() {
 	
 	// listFigures.push_back(centerSphere);
 
-	// listFigures.push_back(triangle);
-	// listFigures.push_back(disc);
-	// listFigures.push_back(perforedDisc);
+	 listFigures.push_back(triangle);
+	 listFigures.push_back(disc);
+	 listFigures.push_back(perforedDisc);
 	// listFigures.push_back(cylinder);
 	// listFigures.push_back(cone);
 	
 	list<LightSource*> lightSources = {};
 
 	lightSources.push_back(new LightSource(Point(0.5, 0.5, -1), Color(1, 1, 1)));
-	lightSources.push_back(new LightSource(Point(-0.5, 0.5, 0), Color(1, 1, 1)));
+	lightSources.push_back(new LightSource(Point(-0.5, 0.5, 0.8), Color(1, 1, 1)));
 
     capture(camera, listFigures, lightSources, 16, "output.ppm");
 }
