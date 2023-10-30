@@ -1,0 +1,11 @@
+/* MAPA DE NORMALES
+					// r += abs(closestFigure->getNormal(hit).getX()*255);
+					// g += abs(closestFigure->getNormal(hit).getY()*255);
+					// b += abs(closestFigure->getNormal(hit).getZ()*255);
+
+					
+					MAPA DE DISTANCIAS
+					r += minT * 100;
+					g += minT * 100;
+					b += minT * 100 
+					*/

@@ -3,13 +3,67 @@
 #include "camera.h"
 #include "randomGenerator.h"
 #include "lightSource.h"
+#include "planet.h"
 #include <list>
 #include <iostream>
 #include <fstream>
 #include <string>
 
+
+
+
+/*
+	
+*/
+Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& hit, list<LightSource*> lightSources, 
+					 const Camera& camera, float& cosine, Direction& Wi) {
+	
+	Color totalColor;
+	for (LightSource* light : lightSources) {
+
+		Vec4 distanceToLight = distance(light->center, hit);
+		float modDistanceToLight = distanceToLight.mod();
+
+		bool shadow = false;
+		float t2;
+
+		// Check if the plane is against the light.
+		if (figure->planeAgainstLight(camera, *light)) {
+			shadow = true;
+			break;
+		} else
+
+		// Check if the point is in shadow.
+		for (Figure* fig : figures)
+				if (fig->intersect(Ray(light->center, -distanceToLight), t2)
+				&&	distanceToLight.mod() - t2*modDistanceToLight > 1e-6
+				&&	(  fig != figure
+					|| distance(hit, light->center - t2*(distanceToLight)).mod() > 1e-4)) {
+						shadow = true;
+						break;
+		}
+
+		if (shadow) continue;
+
+		Color Li = light->power / (modDistanceToLight*modDistanceToLight);
+		Color Fr = figure->color / M_PI;
+		float cosine = cosine * abs(dot(figure->getNormal(hit), distanceToLight.normalize()));
+
+		randomGenerator rand(0, 1);
+		float theta = acos(rand.get());
+		float phi = rand.get()*2*M_PI;
+		Wi = figure -> nextDirection(hit);
+		
+		totalColor = totalColor + (Li * Fr * cosine);
+	}
+
+	return totalColor;
+}
+
+
+
 // Capture the scene from the camera's point of view
-void capture(Camera& camera, list<Figure*> figures, list<LightSource*> lightSources, int raysPerPixel, string fileName) {
+void capture(Camera& camera, list<Figure*> figures, list<LightSource*> lightSources, int raysPerPixel, int maxBounces, string fileName) {
 	std::ofstream output(fileName);
 	output << "P3" << endl;
 	//output << "# MAX" << endl;
@@ -26,68 +80,33 @@ void capture(Camera& camera, list<Figure*> figures, list<LightSource*> lightSour
 		for (int j = 0; j < camera.width; j++) {
 			r = 0; g = 0; b = 0;
 			for (int k = 0; k < raysPerPixel; k++) {
-				Ray ray = Ray(camera.o, Direction(sightOrigin - (j+rand.get())*camera.widthPerPixel*modL - (i+rand.get())*camera.heightPerPixel*modU));
-				float t, minT = 1e6;
-				Figure* closestFigure = nullptr;
 
-				for (Figure* figure : figures)
-					if (figure->intersect(ray, t) && t < minT) {
-						minT = t;
-						closestFigure = figure;
-				}
+				Direction rayDirection = Direction(sightOrigin - (j+rand.get())*camera.widthPerPixel*modL - (i+rand.get())*camera.heightPerPixel*modU);
+				Ray ray = Ray(camera.o, rayDirection);
 
-				if (closestFigure != nullptr) {
-					Point hit = ray.getPoint() + minT*ray.getDirection();
-					Color totalColor;
-					for (LightSource* light : lightSources) {
-						Vec4 distanceToLight = distance(light->center, hit);
-						float modDistanceToLight = distanceToLight.mod();
+				float t, minT, cosine = 1;
 
-						bool shadow = false;
-						float t2;
+				for (int n = 0; n < maxBounces; ++n) {
 
-						// Check if the plane is against the light.
-						if (closestFigure->planeAgainstLight(camera, *light)) {
-							shadow = true;
-							break;
-						} else
-
-						// Check if the point is in shadow.
-						for (Figure* figure : figures)
-								if (figure->intersect(Ray(light->center, -distanceToLight), t2)
-								&&	distanceToLight.mod() - t2*modDistanceToLight > 1e-6
-								&&	(  figure != closestFigure
-									|| distance(hit, light->center - t2*(distanceToLight)).mod() > 1e-4)) {
-										shadow = true;
-										break;
-						}
-
-						if (shadow) continue;
-
-						Color Li = light->power / (modDistanceToLight*modDistanceToLight);
-						Color Fr = closestFigure->color / M_PI;
-						float cosTheta = abs(dot(closestFigure->getNormal(hit), distanceToLight.normalize()));
-
-						totalColor = totalColor + (Li * Fr * cosTheta);
+					minT = 1e6;
+					Figure* closestFigure = nullptr;
+					for (Figure* figure : figures)
+						if (figure->intersect(ray, t) && t < minT) {
+							minT = t;
+							closestFigure = figure;
 					}
+
+					if (closestFigure == nullptr) break;
+
+					Point hit = ray.getPoint() + minT*ray.getDirection();
+
+					Color totalColor = getColorOfHit(closestFigure, figures, hit, lightSources, camera, cosine, rayDirection);	
 
 					r += totalColor.r;
 					g += totalColor.g;
 					b += totalColor.b;
 
-
-					/* MAPA DE NORMALES*/
-
-					// r += abs(closestFigure->getNormal(hit).getX()*255);
-					// g += abs(closestFigure->getNormal(hit).getY()*255);
-					// b += abs(closestFigure->getNormal(hit).getZ()*255);
-
-					/*
-					MAPA DE DISTANCIAS
-					r += minT * 100;
-					g += minT * 100;
-					b += minT * 100 
-					*/
+					ray = ;
 
 				}
 			}
@@ -102,7 +121,7 @@ int main() {
 	Direction l = Direction(-1, 0, 0); // l.rotateY(-15);
 	Direction u = Direction(0, 1, 0); // u.rotateY(-15);
 	Direction f = Direction(0, 0, 3); // f.rotateY(-15);
-    Camera camera = Camera(Point(0, 0, -3.5), l, u, f, 255, 255);
+    Camera camera = Camera(Point(0, 0, -3.5), l, u, f, 256, 256);
 	
     list<Figure*> listFigures = {};
 
@@ -122,9 +141,9 @@ int main() {
 	Disc* disc = new Disc(Point(-0.6, 0.6, 0), Direction(-2, 1, 1), 0.2, Color(0, 255, 255));
 	PerforedDisc* perforedDisc = new PerforedDisc(Point(-0.6, 0.2, -0.2), Direction(1, 1, 1), 0.3, 0.2, Color(0, 255, 255));
 
-	Cylinder* cylinder = new Cylinder(Point(-0.5, -0.5, 0.4), Direction(0, 0, 1), 0.2, 1.5, Color(127, 0, 255));
+	Cylinder* cylinder = new Cylinder(Point(0.5, 0, 0.4), Direction(0, 1, 1), 0.2, 1.5, Color(127, 0, 255));
 
-	Cone* cone = new Cone (Point(0.5, -0.5, 0), Direction(0, 1, 0), 0.5, 0.5, Color(128, 0, 0));
+	Cone* cone = new Cone (Point(0.5, -0.5, 0), Direction(0, 1, -0.2), 0.5, 0.5, Color(128, 0, 0));
 
     listFigures.push_back(leftPlane);
     listFigures.push_back(rightPlane);
@@ -137,16 +156,16 @@ int main() {
 	
 	// listFigures.push_back(centerSphere);
 
-	 listFigures.push_back(triangle);
-	 listFigures.push_back(disc);
-	 listFigures.push_back(perforedDisc);
-	// listFigures.push_back(cylinder);
-	// listFigures.push_back(cone);
+	// listFigures.push_back(triangle);
+	// listFigures.push_back(disc);
+	// listFigures.push_back(perforedDisc);
+	 listFigures.push_back(cylinder);
+	 listFigures.push_back(cone);
 	
 	list<LightSource*> lightSources = {};
 
 	lightSources.push_back(new LightSource(Point(0.5, 0.5, -1), Color(1, 1, 1)));
-	lightSources.push_back(new LightSource(Point(-0.5, 0.5, 0.8), Color(1, 1, 1)));
+	lightSources.push_back(new LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
 
-    capture(camera, listFigures, lightSources, 16, "output.ppm");
+    capture(camera, listFigures, lightSources, 16, 1, "output.ppm");
 }

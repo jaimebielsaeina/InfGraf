@@ -29,31 +29,19 @@ public:
     virtual bool intersect(const Ray& ray, float& t) const = 0;
     virtual bool planeAgainstLight(const Camera& camera, const LightSource& light) const = 0;
     virtual Direction getNormal(const Point& p) const = 0;
+    Color getColor() const { return color / M_PI; }
+    Direction nextDirection(const Point& p) const {
+        randomGenerator rand(0, 1);
+        float theta = acos(rand.get());
+        float phi = rand.get()*2*M_PI;
+        // returns a random direction in the hemisphere defined by the normal of the figure (getNormal())
+        return 
+        //return Direction(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
+    }
     Figure (const Color& color) : color(color) {}
     virtual ~Figure() {}
 
 };
-
-/*class Plane : public Figure {
-
-    Point p;
-    Direction n;
-    
-
-public:
-    Plane(const Point& p, const Direction& n, const Color& color) : p(p), n(n), Figure(color) {
-        //Point pAux = p + 1e-6*n;
-    }
-    bool intersect(const Ray& ray, float& t) const {
-        float denom = dot(ray.getDirection(), n);
-        if (abs(denom) > 1e-6) {
-            t = - dot(distance(ray.getPoint(), p), n) / denom;
-            return t >= 0;
-        }
-        return false; // porque son prependiculares
-    }
-
-};*/
 
 class Plane : public Figure {
     
@@ -119,22 +107,6 @@ public:
         }
     }
 
-    // bool makesShadowItself(const Ray& ray) const {
-    //     Vec4 oc = distance(ray.getPoint(), c);
-    //     float a = dot(ray.getDirection(), ray.getDirection());
-    //     float b = 2 * dot(oc, ray.getDirection());
-    //     float c = dot(oc, oc) - r * r;
-    //     float discriminant = b * b - 4 * a * c;
-    //     if (discriminant < 0) {
-    //         return false;
-    //     }
-    //     else {
-    //         float t1 = (-b - sqrt(discriminant)) / (2 * a);
-    //         float t2 = (-b + sqrt(discriminant)) / (2 * a);
-    //         return (t1 > 1e-3 || t2 > 1e-3);
-    //     }
-    // }
-
     bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
         return false;
     }
@@ -177,10 +149,6 @@ public:
         return false; // porque son prependiculares
     }
 
-    // bool makesShadowItself(const Ray& ray) const {
-    //     return false;
-    // }
-
     bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
         // Gets the plane in which the triangle is contained
         return Plane(n, d, color).planeAgainstLight(camera, light);
@@ -215,10 +183,6 @@ public:
         return false; // porque son prependiculares
     }
 
-    // bool makesShadowItself(const Ray& ray) const {
-    //     return false;
-    // }
-
     bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
         // Gets the plani in which the disc is contained
         return Plane(n, d, color).planeAgainstLight(camera, light);
@@ -252,10 +216,6 @@ public:
         return false; // porque son prependiculares
     }
 
-    // bool makesShadowItself(const Ray& ray) const {
-    //     return false;
-    // }
-
     bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
         // Gets the plani in which the disc is contained
         return Plane(n, d, color).planeAgainstLight(camera, light);
@@ -276,7 +236,7 @@ public:
     Direction getNormal(const Point& p) const {
         return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
     }
-    bool intersect(const Ray& ray, float& t) const {
+    bool intersect(const Ray& ray, float& t, bool noRestriction = false) const {
         Vec4 oc = distance(ray.getPoint(), c);
         float a = dot(ray.getDirection(), ray.getDirection()) - dot(ray.getDirection(), ax) * dot(ray.getDirection(), ax);
         float b = 2 * (dot(oc, ray.getDirection()) - dot(oc, ax) * dot(ray.getDirection(), ax));
@@ -288,35 +248,58 @@ public:
         else {
             float t1 = (-b - sqrt(discriminant)) / (2 * a);
             float t2 = (-b + sqrt(discriminant)) / (2 * a);
-            if (t1 < 0 && t2 < 0)
-                return false;
-            if (t1 >= 0) t = t1;
-            if (t2 < t1 && t2 >= 0) t = t2;
+
+            float tb; bool both = false;
+            if (t1 >= 0 && t2 >= 0) {
+                t = min(t1, t2);
+                tb = max(t1, t2);
+                both = true;
+            }
+            else if (t1 >= 0) t = t1;
+            else if (t2 >= 0) t = t2;
+            else return false;
+            if (noRestriction) return true;
             Point p = ray(t);
-            if (dot(distance(p, c), ax) < -h || dot(distance(p, c), ax) > h)
-                return false;
+            if (dot(distance(p, c), ax) < -h || dot(distance(p, c), ax) > h) {
+                if (both) {
+                    t = tb;
+                    p = ray(t);
+                    if (dot(distance(p, c), ax) < -h || dot(distance(p, c), ax) > h) return false;
+                } else
+                    return false;
+            }
             return true;
+
+
+
+            // if (t1 < 0 && t2 < 0)
+            //     return false;
+            // if (t1 >= 0) t = t1;
+            // if (t2 < t1 && t2 >= 0) t = t2;
+            // Point p = ray(t);
+            // if (dot(distance(p, c), ax) < -h || dot(distance(p, c), ax) > h)
+            //     return false;
+            // return true;
         }
     }
 
-    // bool makesShadowItself(const Ray& ray) const {
-    //     Vec4 oc = distance(ray.getPoint(), c);
-    //     float a = dot(ray.getDirection(), ray.getDirection()) - dot(ray.getDirection(), ax) * dot(ray.getDirection(), ax);
-    //     float b = 2 * (dot(oc, ray.getDirection()) - dot(oc, ax) * dot(ray.getDirection(), ax));
-    //     float g = dot(oc, oc) - dot(oc, ax) * dot(oc, ax) - r * r;
-    //     float discriminant = b * b - 4 * a * g;
-    //     if (discriminant < 0) {
-    //         return false;
-    //     }
-    //     else {
-    //         float t1 = (-b - sqrt(discriminant)) / (2 * a);
-    //         float t2 = (-b + sqrt(discriminant)) / (2 * a);
-    //         return (t1 > 1e-6 || t2 > 1e-6);
-    //     }
-    // }
+    bool intersect(const Ray& ray, float& t) const {
+        return intersect(ray, t, false);
+    }
 
-    bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
-        return false;
+    bool planeAgainstLight(const Camera& camera, const LightSource& light/*, const Point& p*/) const {
+        float t;
+        Direction distanceToLight = distance(light.center, camera.o);
+        return this->intersect(Ray(camera.o, distanceToLight), t, true) && t < 1;
+        /*
+
+        // calculate the vector from the point to the axis of the cylinder
+        Direction distanceToAxis = distance(p, c) - dot(distance(p, c), ax) * ax;
+        // get the plane in which the point in the cylinder is contained
+        
+
+        return Plane(distanceToAxis, d, color).planeAgainstLight(camera, light);
+        */
     }
 };
 
@@ -336,7 +319,7 @@ public:
         return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
     }
     
-    bool intersect(const Ray& ray, float& t) const {
+    bool intersect(const Ray& ray, float& t, bool noRestriction = false) const {
         Vec4 oc = distance(ray.getPoint(), c);
         float a = dot(ray.getDirection(), ray.getDirection()) - (1 + r * r / (h * h)) * dot(ray.getDirection(), ax) * dot(ray.getDirection(), ax);
         float b = 2 * (dot(oc, ray.getDirection()) - (1 + r * r / (h * h)) * dot(oc, ax) * dot(ray.getDirection(), ax));
@@ -348,35 +331,38 @@ public:
         else {
             float t1 = (-b - sqrt(discriminant)) / (2 * a);
             float t2 = (-b + sqrt(discriminant)) / (2 * a);
-            if (t1 < 0 && t2 < 0)
-                return false;
-            if (t1 >= 0) t = t1;
-            if (t2 < t1 && t2 >= 0) t = t2;
+            float tb; bool both = false;
+            if (t1 >= 0 && t2 >= 0) {
+                t = min(t1, t2);
+                tb = max(t1, t2);
+                both = true;
+            }
+            else if (t1 >= 0) t = t1;
+            else if (t2 >= 0) t = t2;
+            else return false;
+            if (noRestriction) return true;
             Point p = ray(t);
-            if (dot(distance(p, c), ax) < 0 || dot(distance(p, c), ax) > h)
-                return false;
+            if (dot(distance(p, c), ax) < 0) return false;
+            if (dot(distance(p, c), ax) > h) {
+                if (both) {
+                    t = tb;
+                    p = ray(t);
+                    if (dot(distance(p, c), ax) > h) return false;
+                } else
+                    return false;
+            }
             return true;
         }
     }
 
-    // bool makesShadowItself(const Ray& ray) const {
-    //     Vec4 oc = distance(ray.getPoint(), c);
-    //     float a = dot(ray.getDirection(), ray.getDirection()) - (1 + r * r / (h * h)) * dot(ray.getDirection(), ax) * dot(ray.getDirection(), ax);
-    //     float b = 2 * (dot(oc, ray.getDirection()) - (1 + r * r / (h * h)) * dot(oc, ax) * dot(ray.getDirection(), ax));
-    //     float g = dot(oc, oc) - (1 + r * r / (h * h)) * dot(oc, ax) * dot(oc, ax);
-    //     float discriminant = b * b - 4 * a * g;
-    //     if (discriminant < 0) {
-    //         return false;
-    //     }
-    //     else {
-    //         float t1 = (-b - sqrt(discriminant)) / (2 * a);
-    //         float t2 = (-b + sqrt(discriminant)) / (2 * a);
-    //         return (t1 > 1e-6 || t2 > 1e-6);
-    //     }
-    // }
+    bool intersect(const Ray& ray, float& t) const {
+        return intersect(ray, t, false);
+    }
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
-        return false;
+        float t;
+        Direction distanceToLight = distance(light.center, camera.o);
+        return this->intersect(Ray(camera.o, distanceToLight), t, true) && t < 1;
     }
 };
 
