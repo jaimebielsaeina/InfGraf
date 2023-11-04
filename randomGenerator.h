@@ -1,3 +1,6 @@
+#pragma once
+#ifndef RANDOMGENERATOR_H
+#define RANDOMGENERATOR_H
 #include <random>
 #include <ctime>
 
@@ -15,3 +18,5 @@ public:
 	double get() { return dist(gen); }
 
 };
+
+#endif // RANDOMGENERATOR_H

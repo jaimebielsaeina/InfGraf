@@ -15,7 +15,8 @@
 /*
 	
 */
-Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& hit, list<LightSource*> lightSources, 
+Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& hit,
+					 const Point& prevHit, list<LightSource*> lightSources, 
 					 const Camera& camera, float& cosine, Direction& Wi) {
 	
 	Color totalColor;
@@ -25,20 +26,20 @@ Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& h
 		float modDistanceToLight = distanceToLight.mod();
 
 		bool shadow = false;
-		float t2;
+		float t;
 
 		// Check if the plane is against the light.
-		if (figure->planeAgainstLight(camera, *light)) {
+		if (figure->planeAgainstLight(camera, *light, hit)) {
 			shadow = true;
 			break;
 		} else
 
 		// Check if the point is in shadow.
 		for (Figure* fig : figures)
-				if (fig->intersect(Ray(light->center, -distanceToLight), t2)
-				&&	distanceToLight.mod() - t2*modDistanceToLight > 1e-6
+				if (fig->intersect(Ray(light->center, -distanceToLight), t)
+				&&	(1 - t) * modDistanceToLight > 1e-6
 				&&	(  fig != figure
-					|| distance(hit, light->center - t2*(distanceToLight)).mod() > 1e-4)) {
+					|| distance(hit, light->center - t*(distanceToLight)).mod() > 1e-4)) {
 						shadow = true;
 						break;
 		}
@@ -47,16 +48,14 @@ Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& h
 
 		Color Li = light->power / (modDistanceToLight*modDistanceToLight);
 		Color Fr = figure->color / M_PI;
-		float cosine = cosine * abs(dot(figure->getNormal(hit), distanceToLight.normalize()));
-
-		randomGenerator rand(0, 1);
-		float theta = acos(rand.get());
-		float phi = rand.get()*2*M_PI;
-		Wi = figure -> nextDirection(hit);
 		
-		totalColor = totalColor + (Li * Fr * cosine);
+		// revisar bien como se calcula el coseno, aqui se acumula para todas las luces y no deberia ser asi
+		
+		totalColor = totalColor + (Li * Fr * cosine * abs(dot(figure->getNormal(hit), distanceToLight.normalize())));
 	}
 
+	Wi = figure -> nextDirection(hit);
+	cosine = cosine * abs(dot(figure->getNormal(hit), distance(hit, prevHit)));
 	return totalColor;
 }
 
@@ -74,17 +73,18 @@ void capture(Camera& camera, list<Figure*> figures, list<LightSource*> lightSour
     Vec4 modU = camera.u.normalize();
 	Vec4 sightOrigin = camera.f + camera.l + camera.u;
 	randomGenerator rand(0, 1);
-	int r, g, b;
+	Color pxColor;
 	for (int i = 0; i < camera.height; i++) {
 		//cout << i << endl;
 		for (int j = 0; j < camera.width; j++) {
-			r = 0; g = 0; b = 0;
+			pxColor = Color();
 			for (int k = 0; k < raysPerPixel; k++) {
 
 				Direction rayDirection = Direction(sightOrigin - (j+rand.get())*camera.widthPerPixel*modL - (i+rand.get())*camera.heightPerPixel*modU);
 				Ray ray = Ray(camera.o, rayDirection);
 
 				float t, minT, cosine = 1;
+				Point hit, prevHit = camera.o;
 
 				for (int n = 0; n < maxBounces; ++n) {
 
@@ -97,20 +97,16 @@ void capture(Camera& camera, list<Figure*> figures, list<LightSource*> lightSour
 					}
 
 					if (closestFigure == nullptr) break;
+					hit = ray.getPoint() + minT*ray.getDirection();
 
-					Point hit = ray.getPoint() + minT*ray.getDirection();
+					pxColor += getColorOfHit(closestFigure, figures, hit, prevHit, lightSources, camera, cosine, rayDirection);	
 
-					Color totalColor = getColorOfHit(closestFigure, figures, hit, lightSources, camera, cosine, rayDirection);	
-
-					r += totalColor.r;
-					g += totalColor.g;
-					b += totalColor.b;
-
-					ray = ;
+					//ray = ;
+					prevHit = hit;
 
 				}
 			}
-			output << r/raysPerPixel << " " << g/raysPerPixel << " " << b/raysPerPixel << "    ";
+			output << pxColor.r/raysPerPixel << " " << pxColor.g/raysPerPixel << " " << pxColor.b/raysPerPixel << "    ";
 		}
 		output << endl;
 	}
@@ -159,8 +155,8 @@ int main() {
 	// listFigures.push_back(triangle);
 	// listFigures.push_back(disc);
 	// listFigures.push_back(perforedDisc);
-	 listFigures.push_back(cylinder);
-	 listFigures.push_back(cone);
+	// listFigures.push_back(cylinder);
+	// listFigures.push_back(cone);
 	
 	list<LightSource*> lightSources = {};
 

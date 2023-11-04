@@ -5,6 +5,8 @@
 #include "color.h"
 #include "camera.h"
 #include "lightSource.h"
+#include "randomGenerator.h"
+#include <cmath>
 
 
 class Ray {
@@ -27,7 +29,7 @@ public:
     Color color;
 public:
     virtual bool intersect(const Ray& ray, float& t) const = 0;
-    virtual bool planeAgainstLight(const Camera& camera, const LightSource& light) const = 0;
+    virtual bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const = 0;
     virtual Direction getNormal(const Point& p) const = 0;
     Color getColor() const { return color / M_PI; }
     Direction nextDirection(const Point& p) const {
@@ -35,7 +37,7 @@ public:
         float theta = acos(rand.get());
         float phi = rand.get()*2*M_PI;
         // returns a random direction in the hemisphere defined by the normal of the figure (getNormal())
-        return 
+        return getNormal(p);
         //return Direction(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
     }
     Figure (const Color& color) : color(color) {}
@@ -51,6 +53,9 @@ class Plane : public Figure {
 public:
     Plane (const Direction& normal, float distance, const Color& color) :
             n(normal.normalize()), d(distance), Figure(color) {}
+
+    Plane (const Direction& normal, const Point& p, const Color& color) :
+            n(normal.normalize()), d(abs(dot(n, distance(Point(0,0,0), p)))), Figure(color) {}
             
     Direction getNormal(const Point& p) const {
         return n;
@@ -65,7 +70,7 @@ public:
         return false; // porque son prependiculares
     }
 
-    bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
+    bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         float t;
         Direction distanceToLight = distance(light.center, camera.o);
         return this->intersect(Ray(camera.o, distanceToLight), t) && t < 1;
@@ -107,7 +112,7 @@ public:
         }
     }
 
-    bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
+    bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         return false;
     }
 
@@ -149,9 +154,9 @@ public:
         return false; // porque son prependiculares
     }
 
-    bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
+    bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plane in which the triangle is contained
-        return Plane(n, d, color).planeAgainstLight(camera, light);
+        return Plane(n, d, color).planeAgainstLight(camera, light, p);
     }
 
 };
@@ -183,9 +188,9 @@ public:
         return false; // porque son prependiculares
     }
 
-    bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
+    bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plani in which the disc is contained
-        return Plane(n, d, color).planeAgainstLight(camera, light);
+        return Plane(n, d, color).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -216,9 +221,9 @@ public:
         return false; // porque son prependiculares
     }
 
-    bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
+    bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plani in which the disc is contained
-        return Plane(n, d, color).planeAgainstLight(camera, light);
+        return Plane(n, d, color).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -287,19 +292,9 @@ public:
         return intersect(ray, t, false);
     }
 
-    bool planeAgainstLight(const Camera& camera, const LightSource& light/*, const Point& p*/) const {
-        float t;
-        Direction distanceToLight = distance(light.center, camera.o);
-        return this->intersect(Ray(camera.o, distanceToLight), t, true) && t < 1;
-        /*
-
-        // calculate the vector from the point to the axis of the cylinder
-        Direction distanceToAxis = distance(p, c) - dot(distance(p, c), ax) * ax;
-        // get the plane in which the point in the cylinder is contained
-        
-
-        return Plane(distanceToAxis, d, color).planeAgainstLight(camera, light);
-        */
+    bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
+        Direction planeNormal = distance(p, c) - dot(distance(p, c), ax) * ax;
+        return Plane(planeNormal, p, color).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -309,11 +304,13 @@ class Cone : public Figure {
     Direction ax; // Vector de dirección del eje del cono
     float r;      // Radio del cono
     float h;      // Altura del cono
+    Point c2;     // Centro de la base del cono
+    float h2;     // Distancia del centro a un punto de la base del cono
 
 public:
 
     Cone (const Point& center, const Direction& axis, float radius, float height, const Color& color)
-        : c(center), ax(axis.normalize()), r(radius), h(height), Figure(color) {}
+        : c(center), ax(axis.normalize()), r(radius), h(height), c2 (center+ax*height), h2(sqrt(r*r+h*h)), Figure(color) {}
 
     Direction getNormal(const Point& p) const {
         return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
@@ -359,10 +356,12 @@ public:
         return intersect(ray, t, false);
     }
 
-    bool planeAgainstLight(const Camera& camera, const LightSource& light) const {
-        float t;
-        Direction distanceToLight = distance(light.center, camera.o);
-        return this->intersect(Ray(camera.o, distanceToLight), t, true) && t < 1;
+    bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
+        // obtiene la normal del plano tangente al CONO en el que se encuentra p
+        Direction vertexToP = distance(p, c);
+        Direction perpendicular2 = cross(vertexToP, distance(c2, c + vertexToP.normalize()*h2));
+        Direction planeNormal = cross(vertexToP, perpendicular2).normalize();
+        return Plane(planeNormal, p, color).planeAgainstLight(camera, light, p);
     }
 };
 
