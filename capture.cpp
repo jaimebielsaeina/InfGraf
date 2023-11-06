@@ -8,6 +8,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
+#include <thread>
+
+using namespace std;
 
 
 
@@ -59,22 +63,70 @@ Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& h
 	return totalColor;
 }
 
-
-
-// Capture the scene from the camera's point of view
-void capture(Camera& camera, list<Figure*> figures, list<LightSource*> lightSources, int raysPerPixel, int maxBounces, string fileName) {
-	std::ofstream output(fileName);
-	output << "P3" << endl;
-	//output << "# MAX" << endl;
-	output << camera.width << " " << camera.height << endl;
-	output << "255" << endl;
-
+void captureSection(Camera& camera, list<Figure*> figures, list<LightSource*> lightSources, int raysPerPixel, int maxBounces, int minH, int maxH, std::vector<Color>& pixelsValue) {
+	
 	Vec4 modL = camera.l.normalize(); 
     Vec4 modU = camera.u.normalize();
 	Vec4 sightOrigin = camera.f + camera.l + camera.u;
 	randomGenerator rand(0, 1);
 	Color pxColor;
-	for (int i = 0; i < camera.height; i++) {
+	for (int i = minH; i < maxH; i++) {
+		//cout << i << endl;
+		for (int j = 0; j < camera.width; j++) {
+			pxColor = Color();
+			for (int k = 0; k < raysPerPixel; k++) {
+
+				Direction rayDirection = Direction(sightOrigin - (j+rand.get())*camera.widthPerPixel*modL - (i+rand.get())*camera.heightPerPixel*modU);
+				Ray ray = Ray(camera.o, rayDirection);
+
+				float t, minT, cosine = 1;
+				Point hit, prevHit = camera.o;
+
+				for (int n = 0; n < maxBounces; ++n) {
+
+					minT = 1e6;
+					Figure* closestFigure = nullptr;
+					for (Figure* figure : figures)
+						if (figure->intersect(ray, t) && t < minT) {
+							minT = t;
+							closestFigure = figure;
+					}
+
+					if (closestFigure == nullptr) break;
+					hit = ray.getPoint() + minT*ray.getDirection();
+
+					pxColor += getColorOfHit(closestFigure, figures, hit, prevHit, lightSources, camera, cosine, rayDirection);	
+
+					//ray = ;
+					prevHit = hit;
+
+				}
+			}
+			pixelsValue[i*camera.width + j] = pxColor/raysPerPixel;
+		}
+	}
+}
+
+// Capture the scene from the camera's point of view
+void capture(Camera& camera, list<Figure*> figures, list<LightSource*> lightSources, int raysPerPixel, int maxBounces, int threads, string fileName) {
+	std::ofstream output(fileName);
+	output << "P3" << endl;
+	//output << "# MAX" << endl;
+	output << camera.width << " " << camera.height << endl;
+	output << "255" << endl;
+	vector<Color> finalImage(camera.height * camera.width);
+	vector<thread> threadsArray(threads);
+
+	/*const size_t numThreads = std::thread::hardware_concurrency();
+    std::vector<std::thread> threadsArray;
+    threadsArray.reserve(numThreads);*/
+
+	for (int t = 0; t < threads; t++) {
+		int minH = t * camera.height / threads;
+		int maxH = (t + 1) * camera.height / threads;
+		threadsArray[t] = thread(&captureSection, ref(camera), ref(figures), ref(lightSources), raysPerPixel, maxBounces, minH, maxH, ref(finalImage));
+	}
+	/*for (int i = 0; i < camera.height; i++) {
 		//cout << i << endl;
 		for (int j = 0; j < camera.width; j++) {
 			pxColor = Color();
@@ -109,6 +161,16 @@ void capture(Camera& camera, list<Figure*> figures, list<LightSource*> lightSour
 			output << pxColor.r/raysPerPixel << " " << pxColor.g/raysPerPixel << " " << pxColor.b/raysPerPixel << "    ";
 		}
 		output << endl;
+	}*/
+	for (int t = 0; t < threads; t++) {
+		threadsArray[t].join();
+		for (int i = 0; i < camera.height; i++) {
+			for (int j = 0; j < camera.width; j++) {
+				Color pxColor = finalImage[i*camera.width + j];
+				output << pxColor.r << " " << pxColor.g << " " << pxColor.b << "    ";
+			}
+			output << endl;
+		}
 	}
 	output.close();
 }
@@ -137,9 +199,9 @@ int main() {
 	Disc* disc = new Disc(Point(-0.6, 0.6, 0), Direction(-2, 1, 1), 0.2, Color(0, 255, 255));
 	PerforedDisc* perforedDisc = new PerforedDisc(Point(-0.6, 0.2, -0.2), Direction(1, 1, 1), 0.3, 0.2, Color(0, 255, 255));
 
-	Cylinder* cylinder = new Cylinder(Point(0.5, 0, 0.4), Direction(0, 1, 1), 0.2, 1.5, Color(127, 0, 255));
+	Cylinder* cylinder = new Cylinder(Point(-0.5, 0, 0.4), Direction(0, 0, 1), 0.2, 1.5, Color(127, 0, 255));
 
-	Cone* cone = new Cone (Point(0.5, -0.5, 0), Direction(0, 1, -0.2), 0.5, 0.5, Color(128, 0, 0));
+	Cone* cone = new Cone (Point(0.5, -0.5, 0), Direction(0, 1, -0.2), 0.5, 0.5, Color(255, 128, 0));
 
     listFigures.push_back(leftPlane);
     listFigures.push_back(rightPlane);
@@ -163,5 +225,5 @@ int main() {
 	lightSources.push_back(new LightSource(Point(0.5, 0.5, -1), Color(1, 1, 1)));
 	lightSources.push_back(new LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
 
-    capture(camera, listFigures, lightSources, 16, 1, "output.ppm");
+    capture(camera, listFigures, lightSources, 64, 1, 4, "output.ppm");
 }
