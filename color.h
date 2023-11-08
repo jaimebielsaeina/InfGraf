@@ -7,6 +7,7 @@ class Color {
 public:
     double r, g, b;
     Color(double r, double g, double b) : r(r), g(g), b(b) {}
+    Color(double w) : r(w), g(w), b(w) {} // white
     Color() : r(0), g(0), b(0) {}
     ~Color() {}
 
@@ -58,7 +59,11 @@ public:
         c = c / k;
         return c;
     }
-    
+
+    friend ostream &operator<< (ostream &o, const Color &c){
+        o << c.r << " " << c.g << " " << c.b;
+        return o;
+    }
     
 };
 

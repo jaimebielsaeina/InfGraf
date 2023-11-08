@@ -199,7 +199,7 @@ public:
         m.set(1, 3, o.y);
         m.set(2, 3, o.z);
         m.set(3, 3, 1);
-        cout << m << endl;
+        
         this->applyMatrix(m);
     }
 

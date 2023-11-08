@@ -2,18 +2,22 @@
 #ifndef FIGURE_H
 #define FIGURE_H
 #include "vec4.h"
+#include "planet.h"
 #include "color.h"
 #include "camera.h"
 #include "lightSource.h"
 #include "randomGenerator.h"
 #include <cmath>
 
+randomGenerator randGen(0, 1);
+randomGenerator randPhi(0, 2*M_PI);
 
 class Ray {
 
     Vec4 p, d;
 
 public:
+    Ray() {}
     Ray(const Point& p, const Direction& d) : p(p), d(d) {}
     Vec4 operator()(float t) const {
         return p + t * d;
@@ -33,12 +37,29 @@ public:
     virtual Direction getNormal(const Point& p) const = 0;
     Color getColor() const { return color / M_PI; }
     Direction nextDirection(const Point& p) const {
-        randomGenerator rand(0, 1);
-        float theta = acos(rand.get());
-        float phi = rand.get()*2*M_PI;
+        float theta = acos(sqrt(randGen.get()));
+        float phi = randPhi.get();
+
+        /*Direction normal = getNormal(p);
+        Point randomPoint = BasicPlanet(p, 1).city(theta, phi);
+        return distance(p, Planet(p, normal*2, p + cross(normal, distance(p, randomPoint)).normalize()).city(theta, phi)).normalize();*/
+
+        //Genera un punto aleatorio en la esfera unitaria
+        Point randomPoint = BasicPlanet(Point(0,0,0), 1).city(theta, phi);
+        //Cambiar la base del punto aleatorio a la base del plano tangente en p
+        Direction normal = getNormal(p);
+        Direction perpendicular1 = cross(normal, distance(randomPoint, p));
+        Direction perpendicular2 = cross(normal, perpendicular1);
+        /*cout << p << endl;
+        cout << "normal: " << normal << endl;
+        cout << randomPoint << endl;
+        randomPoint.baseChange(p, perpendicular1, perpendicular2, normal);
+        cout << randomPoint << endl;
+        cout << distance(randomPoint, p) << endl;*/
+        
         // returns a random direction in the hemisphere defined by the normal of the figure (getNormal())
-        return getNormal(p);
-        //return Direction(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
+        return distance(randomPoint, p);
+
     }
     Figure (const Color& color) : color(color) {}
     virtual ~Figure() {}

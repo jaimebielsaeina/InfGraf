@@ -17,9 +17,9 @@ public:
         return radius;
     }
     Point city (double theta, double phi) const {
-        return Point(center.getX() + radius * cos(theta) * cos(phi),
-                    center.getY() + radius * sin(theta) * cos(phi),
-                    center.getZ() + radius * sin(phi));
+        return Point(center.getX() + radius * sin(phi) * sin(theta),
+                    center.getY() + radius * cos(phi) * sin(theta),
+                    center.getZ() + radius * cos(theta));
     }
 
 };
@@ -33,10 +33,14 @@ class Planet {
 public:
     // guarda el centro, el eje  y el meridiano como el angulo de desplaxamiento respecto del eje y
     Planet (Point center, Direction axis, Point meridian) : center(center), axis(axis), meridian(meridian) {
+        //cout << (distance(center, meridian)).mod() << " " << axis.mod()/2 << endl;
         if (abs((distance(center, meridian)).mod() - axis.mod()/2) > 0.000001) {
             cout << "La ciudad de referencia no está en la superficie del planeta." << endl;
             exit(1);
         }
+    }
+    friend Planet planetWithNorthAxis (Point center, Direction northAxis, Point meridian) {
+        return Planet(center, northAxis*2, meridian);
     }
     Point getCenter () const {
         return center;
