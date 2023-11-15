@@ -22,10 +22,6 @@ Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& h
 	bool shadow = false;
 	float t;
 
-	Color Li = lightSource.power / (modDistanceToLight*modDistanceToLight);
-	Color Fr = figure->color / M_PI;
-	float cosine = abs(dot(figure->getNormal(hit), distanceToLight.normalize()));
-
 	// Check if the plane is against the light.
 	if (figure->planeAgainstLight(camera, lightSource, hit))
 		shadow = true;
@@ -43,24 +39,28 @@ Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& h
 
 	if (shadow)	return Color(0);
 
+	Color Li = lightSource.power / (modDistanceToLight*modDistanceToLight);
+	Color Fr = figure->color / M_PI;
+	float cosine = abs(dot(figure->getNormal(hit), distanceToLight.normalize()));
+
 	return Li * Fr * cosine * scatter;
 
 }
 
 void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, int maxBounces, int minH, int maxH, std::vector<Color>& pixelsValue) {
 	
-	Vec4 modL = camera.l.normalize(); 
+	Vec4 modL = camera.l.normalize();					// Get L and U normalized vectors.
     Vec4 modU = camera.u.normalize();
-	Vec4 sightOrigin = camera.f + camera.l + camera.u;
-	randomGenerator rand(0, 1);
-	Color pxColor;
+	Vec4 sightOrigin = camera.f + camera.l + camera.u;	// Get the point located at the top left corner of the image.
+	randomGenerator rand(0, 1);							// Random number generator.
+	Color pxColor;										// Stores the total color for the pixel.
 
-	Direction rayDirection;
-	Ray ray;
-	float t, minT;
-	Point hit, prevHit;
-	Figure* closestFigure;
-	vector<Color> scatter(lightSources.size());
+	Direction rayDirection;								// Direction of the next ray.
+	Ray ray;											// Next ray.
+	float t, minT;										// Stores the distance to the closest figure.
+	Point hit, prevHit;									// Stores the point on whith the ray hits.
+	Figure* closestFigure;								// Stores the closest figure to the camera.
+	Color scatter;										// Stores the color of the light scattered by the figure.
 	
 	for (int i = minH; i < maxH; i++) {
 		//cout << i << endl;
@@ -68,11 +68,14 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 			pxColor = Color();
 			for (int k = 0; k < raysPerPixel; k++) {
 
+				// Get the direction of the ray.
 				rayDirection = Direction(sightOrigin - (j+rand.get())*camera.widthPerPixel*modL - (i+rand.get())*camera.heightPerPixel*modU);
+				// Build the ray using the camera's origin and the direction.
 				ray = Ray(camera.o, rayDirection);
 				prevHit = camera.o;
 
-				for (int i = 0; i < scatter.size(); ++i) scatter[i] = Color(1);
+				// At first, scatter doesn't affect the total color.
+				scatter = Color(1);
 
 				for (int b = 0; b < maxBounces; ++b) {
 
@@ -88,14 +91,16 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 					hit = ray.getPoint() + minT*ray.getDirection();
 
 					for (int i = 0; i < lightSources.size(); ++i)
-						pxColor += getColorOfHit(closestFigure, figures, hit, prevHit, lightSources[i], camera, scatter[i], rayDirection);
+						pxColor += getColorOfHit(closestFigure, figures, hit, prevHit, lightSources[i], camera, scatter, rayDirection);
 
 					prevHit = hit;
-					for (int i = 0; i < scatter.size(); ++i)
-						scatter[i] *= closestFigure->color; // / M_PI * abs(dot(closestFigure->getNormal(hit), -rayDirection));
+					scatter *= closestFigure->color;
 					rayDirection = closestFigure -> nextDirection(hit);
+					if (dot(rayDirection, closestFigure->getNormal(hit)) < 0) {
+						rayDirection = -rayDirection;
+					}
+					//cout << rayDirection.getZ() << endl;
 					ray = Ray(hit, rayDirection);
-
 				}
 			}
 			pixelsValue[i*camera.width + j] = pxColor;
@@ -143,8 +148,8 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 int main(int argc, char* argv[]) {
 
 	// Check the number of arguments.
-	if (argc != 3) {
-		cout << "Usage: " << argv[0] << " <output_file> <number of threads" << endl;
+	if (argc != 5) {
+		cout << "Usage: " << argv[0] << " <output_file> <rays per pixel> <max bounces> <number of threads>" << endl;
 		return 1;
 	}
 
@@ -201,5 +206,5 @@ int main(int argc, char* argv[]) {
 	//lightSources.push_back(LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
 
 	// Capturing the scene and storing it at the specified file.
-    capture(camera, listFigures, lightSources, 32, 5, stoi(argv[2]), argv[1]);
+    capture(camera, listFigures, lightSources, stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[1]);
 }

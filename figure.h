@@ -37,28 +37,27 @@ public:
     virtual Direction getNormal(const Point& p) const = 0;
     Color getColor() const { return color / M_PI; }
     Direction nextDirection(const Point& p) const {
+
         float theta = acos(sqrt(randGen.get()));
         float phi = randPhi.get();
 
-        /*Direction normal = getNormal(p);
+        Direction normal = getNormal(p);
         Point randomPoint = BasicPlanet(p, 1).city(theta, phi);
-        return distance(p, Planet(p, normal*2, p + cross(normal, distance(p, randomPoint)).normalize()).city(theta, phi)).normalize();*/
+        return distance(p, Planet(p, normal*2, p + cross(normal, distance(p, randomPoint)).normalize()).city(theta, phi)).normalize();
 
         //Genera un punto aleatorio en la esfera unitaria
-        Point randomPoint = BasicPlanet(Point(0,0,0), 1).city(theta, phi);
+        
+        /*Point randomPoint = BasicPlanet(Point(0,0,0), 1).city(theta, phi);
+        cout << randomPoint.getZ() << endl;
         //Cambiar la base del punto aleatorio a la base del plano tangente en p
-        Direction normal = getNormal(p);
-        Direction perpendicular1 = cross(normal, distance(randomPoint, p));
+        Direction normal = this->getNormal(p);
+        Direction perpendicular1 = cross(normal, (dot (normal, Direction(1,0,0)) < 0.9) ?  Direction (1,0,0) : Direction(0,1,0));
         Direction perpendicular2 = cross(normal, perpendicular1);
-        /*cout << p << endl;
-        cout << "normal: " << normal << endl;
-        cout << randomPoint << endl;
+        
         randomPoint.baseChange(p, perpendicular1, perpendicular2, normal);
-        cout << randomPoint << endl;
-        cout << distance(randomPoint, p) << endl;*/
         
         // returns a random direction in the hemisphere defined by the normal of the figure (getNormal())
-        return distance(randomPoint, p);
+        return distance(randomPoint, p);*/
 
     }
     Figure (const Color& color) : color(color) {}

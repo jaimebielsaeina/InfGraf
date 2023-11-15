@@ -223,8 +223,12 @@ public:
         m.set(3, 3, 1);
         m.invertMatrix();
 
-        cout << m << endl;
+        //cout << m << endl;
         this->applyMatrix(m);
+    }
+
+    friend bool operator== (const Vec4 &c1, const Vec4 &c2) {
+        return c1.x == c2.x && c1.y == c2.y && c1.z == c2.z && c1.isPoint == c2.isPoint;
     }
 
     // devuelve el angulo entre dos direcciones en radianes
