@@ -37,13 +37,13 @@ public:
     virtual Direction getNormal(const Point& p) const = 0;
     Color getColor() const { return color / M_PI; }
     Direction nextDirection(const Point& p) const {
-
+        //cout << p << endl;
         float theta = acos(sqrt(randGen.get()));
         float phi = randPhi.get();
 
         Direction normal = getNormal(p);
         Point randomPoint = BasicPlanet(p, 1).city(theta, phi);
-        return distance(p, Planet(p, normal*2, p + cross(normal, distance(p, randomPoint)).normalize()).city(theta, phi)).normalize();
+        return distance(Planet(p, normal*2, p + cross(normal, distance(p, randomPoint)).normalize()).city(theta, phi), p).normalize();
 
         //Genera un punto aleatorio en la esfera unitaria
         

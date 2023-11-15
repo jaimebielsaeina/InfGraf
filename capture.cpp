@@ -89,6 +89,7 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 
 					if (closestFigure == nullptr) break;
 					hit = ray.getPoint() + minT*ray.getDirection();
+					hit = hit + 1e-8* closestFigure->getNormal(hit);
 
 					for (int i = 0; i < lightSources.size(); ++i)
 						pxColor += getColorOfHit(closestFigure, figures, hit, prevHit, lightSources[i], camera, scatter, rayDirection);
