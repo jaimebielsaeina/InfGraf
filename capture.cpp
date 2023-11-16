@@ -100,7 +100,7 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 					if (dot(rayDirection, closestFigure->getNormal(hit)) < 0) {
 						rayDirection = -rayDirection;
 					}
-					//cout << rayDirection.getZ() << endl;
+
 					ray = Ray(hit, rayDirection);
 				}
 			}
@@ -170,8 +170,8 @@ int main(int argc, char* argv[]) {
 	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0.8, 0.8, 0.8));
 	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(0.8, 0.8, 0.8));
 
-	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(1, 0, 1));
-	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0, 1, 1));
+	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.72, 0.95));
+	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0.72, 0.94, 0.95));
 
     Sphere* centerSphere = new Sphere(Point(0, -0.5, 0), 0.5, Color(1, 1, 0));
 
