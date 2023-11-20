@@ -13,8 +13,8 @@ using namespace std;
 
 
 Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& hit,
-					 const Point& prevHit, LightSource& lightSource, 
-					 const Camera& camera, Color& scatter, Direction& Wi) {
+					 LightSource& lightSource, const Camera& camera, Color& scatter,
+					 Phenomenom& ph) {
 
 	Vec4 distanceToLight = distance(lightSource.center, hit);
 	float modDistanceToLight = distanceToLight.mod();
@@ -40,9 +40,18 @@ Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& h
 	if (shadow)	return Color(0);
 
 	Color Li = lightSource.power / (modDistanceToLight*modDistanceToLight);
-	Color Fr = figure->color / M_PI;
-	float cosine = abs(dot(figure->getNormal(hit), distanceToLight.normalize()));
+	Color Fr = figure->getFr(ph);
 
+	switch (ph) {
+		case NONE:
+			return Fr;
+		case LIGHT:
+			return Fr * scatter;
+		case REFLECTION:
+		case REFRACTION:
+			return Li * Fr * scatter;
+	}
+	float cosine = abs(dot(figure->getNormal(hit), distanceToLight.normalize()));
 	return Li * Fr * cosine * scatter;
 
 }
@@ -58,9 +67,10 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 	Direction rayDirection;								// Direction of the next ray.
 	Ray ray;											// Next ray.
 	float t, minT;										// Stores the distance to the closest figure.
-	Point hit, prevHit;									// Stores the point on whith the ray hits.
+	Point hit;									// Stores the point on whith the ray hits.
 	Figure* closestFigure;								// Stores the closest figure to the camera.
 	Color scatter;										// Stores the color of the light scattered by the figure.
+	Phenomenom ph;
 	
 	for (int i = minH; i < maxH; i++) {
 		//cout << i << endl;
@@ -72,7 +82,6 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 				rayDirection = Direction(sightOrigin - (j+rand.get())*camera.widthPerPixel*modL - (i+rand.get())*camera.heightPerPixel*modU);
 				// Build the ray using the camera's origin and the direction.
 				ray = Ray(camera.o, rayDirection);
-				prevHit = camera.o;
 
 				// At first, scatter doesn't affect the total color.
 				scatter = Color(1);
@@ -91,16 +100,26 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 					hit = ray.getPoint() + minT*ray.getDirection();
 					hit = hit + 1e-8* closestFigure->getNormal(hit);
 
-					for (int i = 0; i < lightSources.size(); ++i)
-						pxColor += getColorOfHit(closestFigure, figures, hit, prevHit, lightSources[i], camera, scatter, rayDirection);
+					ph = closestFigure->getPhenomenom();
 
-					prevHit = hit;
-					scatter *= closestFigure->color;
-					rayDirection = closestFigure -> nextDirection(hit);
-					if (dot(rayDirection, closestFigure->getNormal(hit)) < 0) {
-						rayDirection = -rayDirection;
+					
+					if (ph == NONE) break;
+					else if (ph == LIGHT) {
+						pxColor += closestFigure->color * scatter;
+						break;
+					} else if (ph == REFLECTION) {
+						rayDirection = closestFigure -> reflectionBounce(rayDirection, hit);
+					} else if (ph == REFRACTION) {
+						//rayDirection = closestFigure -> refractionBounce(hit);
+					} else {
+						for (int i = 0; i < lightSources.size(); ++i)
+							pxColor += getColorOfHit(closestFigure, figures, hit, lightSources[i], camera, scatter, ph);
+
+							scatter *= closestFigure->color;
+							rayDirection = closestFigure -> randBounce(hit);
+							/*if (dot(rayDirection, closestFigure->getNormal(hit)) < 0)
+									rayDirection = -rayDirection;*/
 					}
-
 					ray = Ray(hit, rayDirection);
 				}
 			}
@@ -164,25 +183,25 @@ int main(int argc, char* argv[]) {
     list<Figure*> listFigures = {};
 
 	// Defining the figures.
-	Plane* leftPlane = new Plane(Direction(1, 0, 0), 1, Color(1, 0, 0));
-	Plane* rightPlane = new Plane(Direction(-1, 0, 0), 1, Color(0, 1, 0));
-	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(0.8, 0.8, 0.8));
-	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0.8, 0.8, 0.8));
-	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(0.8, 0.8, 0.8));
+	Plane* leftPlane = new Plane(Direction(1, 0, 0), 1, Color(1, 0, 0), 1, 0, 0, 0);
+	Plane* rightPlane = new Plane(Direction(-1, 0, 0), 1, Color(0, 1, 0), 1, 0, 0, 0);
+	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(0.8, 0.8, 0.8), 1, 0, 0, 0);
+	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0.8, 0.8, 0.8), 0, 0, 0, 1);
+	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(0.8, 0.8, 0.8), 1, 0, 0, 0);
 
-	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.72, 0.95));
-	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0.72, 0.94, 0.95));
+	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.72, 0.95), 1, 0, 0, 0);
+	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0.72, 0.94, 0.95), 1, 0, 0, 0);
 
-    Sphere* centerSphere = new Sphere(Point(0, -0.5, 0), 0.5, Color(1, 1, 0));
+    Sphere* centerSphere = new Sphere(Point(0, -0.5, 0), 0.5, Color(1, 1, 0), 1, 0, 0, 0);
 
-	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 1), Point(-0.25, 1, 0), Color(1, 0.5, 0));
+	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 1), Point(-0.25, 1, 0), Color(1, 0.5, 0), 1, 0, 0, 0);
 
-	Disc* disc = new Disc(Point(-0.6, 0.6, 0), Direction(-2, 1, 1), 0.2, Color(0, 1, 1));
-	PerforedDisc* perforedDisc = new PerforedDisc(Point(-0.6, 0.2, -0.2), Direction(1, 1, 1), 0.3, 0.2, Color(0, 1, 1));
+	Disc* disc = new Disc(Point(-0.6, 0.6, 0), Direction(-2, 1, 1), 0.2, Color(0, 1, 1), 1, 0, 0, 0);
+	PerforedDisc* perforedDisc = new PerforedDisc(Point(-0.6, 0.2, -0.2), Direction(1, 1, 1), 0.3, 0.2, Color(0, 1, 1), 1, 0, 0, 0);
 
-	Cylinder* cylinder = new Cylinder(Point(-0.5, 0, 0.4), Direction(0, 0, 1), 0.2, 1.5, Color(0.5, 0, 1));
+	Cylinder* cylinder = new Cylinder(Point(-0.5, 0, 0.4), Direction(0, 0, 1), 0.2, 1.5, Color(0.5, 0, 1), 1, 0, 0, 0);
 
-	Cone* cone = new Cone (Point(0.5, -0.5, 0), Direction(0, 1, -0.2), 0.5, 0.5, Color(1, 0.5, 0));
+	Cone* cone = new Cone (Point(0.5, -0.5, 0), Direction(0, 1, -0.2), 0.5, 0.5, Color(1, 0.5, 0), 1, 0, 0, 0);
 
     listFigures.push_back(leftPlane);
     listFigures.push_back(rightPlane);
@@ -203,7 +222,7 @@ int main(int argc, char* argv[]) {
 	
 	// Defining the light sources.
 	vector<LightSource> lightSources = {};
-	lightSources.push_back(LightSource(Point(0, 0.5, 0), Color(1, 1, 1)));
+	//lightSources.push_back(LightSource(Point(0, 0.5, 0), Color(1, 1, 1)));
 	//lightSources.push_back(LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
 
 	// Capturing the scene and storing it at the specified file.

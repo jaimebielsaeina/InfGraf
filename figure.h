@@ -9,7 +9,10 @@
 #include "randomGenerator.h"
 #include <cmath>
 
+enum Phenomenom {DIFFUSE, REFLECTION, REFRACTION, LIGHT, NONE};
+
 randomGenerator randGen(0, 1);
+randomGenerator randUnit(-1, 1);
 randomGenerator randPhi(0, 2*M_PI);
 
 class Ray {
@@ -31,19 +34,43 @@ class Figure {
 
 public:
     Color color;
+    float reflexRatio, refracRatio, lightRatio, noneRatio;
 public:
     virtual bool intersect(const Ray& ray, float& t) const = 0;
     virtual bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const = 0;
     virtual Direction getNormal(const Point& p) const = 0;
-    Color getColor() const { return color / M_PI; }
-    Direction nextDirection(const Point& p) const {
+    Phenomenom getPhenomenom () const {
+        float r = randGen.get();
+        if (r < reflexRatio) return DIFFUSE;
+        else if (r < refracRatio) return REFLECTION;
+        else if (r < lightRatio) return REFRACTION;
+        else if (r < noneRatio) return LIGHT;
+        else return NONE;
+    }
+    Color getFr(const Phenomenom& p) const {
+        switch (p) {
+        case DIFFUSE:
+            return color / M_PI;
+        case LIGHT:
+            return color;
+        default:
+            return Color(0);
+        }
+    }
+    Direction randBounce(const Point& p) const {
         //cout << p << endl;
-        float theta = acos(sqrt(randGen.get()));
-        float phi = randPhi.get();
+        // float theta = acos(sqrt(randGen.get()));
+        // float phi = randPhi.get();
+
+        // Direction normal = getNormal(p);
+        // Point randomPoint = BasicPlanet(p, 1).city(theta, phi);
+        // return distance(Planet(p, normal*2, p + distance(p, randomPoint)).city(theta, phi), p);
 
         Direction normal = getNormal(p);
-        Point randomPoint = BasicPlanet(p, 1).city(theta, phi);
-        return distance(Planet(p, normal*2, p + cross(normal, distance(p, randomPoint)).normalize()).city(theta, phi), p).normalize();
+        Direction res = Direction(randUnit.get(), randUnit.get(), randUnit.get());
+        while (res.mod() > 1 && dot(res, normal) < 0)
+                res = Direction(randUnit.get(), randUnit.get(), randUnit.get());
+        return res.normalize();
 
         //Genera un punto aleatorio en la esfera unitaria
         
@@ -60,7 +87,29 @@ public:
         return distance(randomPoint, p);*/
 
     }
-    Figure (const Color& color) : color(color) {}
+
+    Direction reflectionBounce (const Direction& d, const Point& p) const {
+        Direction normal = getNormal(p);
+        return d - 2 * normal * dot(d, normal);
+    }
+
+    Direction refractionBounce (const Direction& d, const Point& p, float n1, float n2) const {
+        Direction normal = getNormal(p);
+        float cosTheta1 = dot(d, normal);
+        float sinTheta1 = sqrt(1 - cosTheta1 * cosTheta1);
+        float sinTheta2 = (n1 / n2) * sinTheta1;
+        float cosTheta2 = sqrt(1 - sinTheta2 * sinTheta2);
+        return (n1 / n2) * d + (n1 / n2 * cosTheta1 - cosTheta2) * normal;
+    }
+
+    Figure (const Color& color, const float diffuse, const float reflex, const float refract, const float light) :
+            color(color), reflexRatio(diffuse), refracRatio(reflexRatio+reflex),
+            lightRatio(refracRatio+refract), noneRatio(lightRatio+light) {
+        if (noneRatio > 1) {
+            cout << "Error: the sum of figure color phenomenom ratios must be, as much, 1.\n";
+            exit(1);
+        }
+    }
     virtual ~Figure() {}
 
 };
@@ -71,11 +120,13 @@ class Plane : public Figure {
     float d;
 
 public:
-    Plane (const Direction& normal, float distance, const Color& color) :
-            n(normal.normalize()), d(distance), Figure(color) {}
+    Plane (const Direction& normal, float distance, const Color& color,
+            const float diffuse, const float reflex, const float refract, const float light) :
+            n(normal.normalize()), d(distance), Figure(color, diffuse, reflex, refract, light) {}
 
-    Plane (const Direction& normal, const Point& p, const Color& color) :
-            n(normal.normalize()), d(abs(dot(n, distance(Point(0,0,0), p)))), Figure(color) {}
+    Plane (const Direction& normal, const Point& p, const Color& color,
+            const float diffuse, const float reflex, const float refract, const float light) :
+            n(normal.normalize()), d(abs(dot(n, distance(Point(0,0,0), p)))), Figure(color, diffuse, reflex, refract, light) {}
             
     Direction getNormal(const Point& p) const {
         return n;
@@ -104,8 +155,9 @@ class Sphere : public Figure {
     Color color;
 
 public:
-    Sphere(const Point& c, float r, const Color& color) :
-            c(c), r(r), Figure(color) {}
+    Sphere(const Point& c, float r, const Color& color,
+            const float diffuse, const float reflex, const float refract, const float light) :
+            c(c), r(r), Figure(color, diffuse, reflex, refract, light) {}
 
     Direction getNormal(const Point& p) const {
         
@@ -146,8 +198,9 @@ class Triangle : public Figure {
 
 public:
 
-    Triangle(const Point& p1, const Point& p2, const Point& p3, const Color& color) :
-            p1(p1), p2(p2), p3(p3), Figure(color),
+    Triangle(const Point& p1, const Point& p2, const Point& p3, const Color& color,
+            const float diffuse, const float reflex, const float refract, const float light) :
+            p1(p1), p2(p2), p3(p3), Figure(color, diffuse, reflex, refract, light),
             n(cross(distance(p2, p1), distance(p3, p1))),
             d(dot(n, distance(p1, Point(0, 0, 0)))) {}
 
@@ -176,7 +229,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plane in which the triangle is contained
-        return Plane(n, d, color).planeAgainstLight(camera, light, p);
+        return Plane(n, d, color, 0, 0, 0, 0).planeAgainstLight(camera, light, p);
     }
 
 };
@@ -188,8 +241,9 @@ class Disc : public Figure {
     float r, d;
 
 public:
-    Disc (const Point& center, const Direction& normal, float radius, const Color& color)
-        : c(center), n(normal.normalize()), r(radius), d(dot(n, distance(Point(0, 0, 0), center))), Figure(color) {}
+    Disc (const Point& center, const Direction& normal, float radius, const Color& color,
+            const float diffuse, const float reflex, const float refract, const float light)
+        : c(center), n(normal.normalize()), r(radius), d(dot(n, distance(Point(0, 0, 0), center))), Figure(color, diffuse, reflex, refract, light) {}
 
     Direction getNormal(const Point& p) const {
         return n;
@@ -210,7 +264,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plani in which the disc is contained
-        return Plane(n, d, color).planeAgainstLight(camera, light, p);
+        return Plane(n, d, color, 0, 0, 0, 0).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -221,8 +275,9 @@ class PerforedDisc : public Figure {
     float r, rp, d;
 
 public:
-    PerforedDisc (const Point& center, const Direction& normal, float radius, float radiusPerforation, const Color& color)
-        : c(center), n(normal.normalize()), r(radius), rp(radiusPerforation), d(dot(n, distance(Point(0, 0, 0), center))), Figure(color) {}
+    PerforedDisc (const Point& center, const Direction& normal, float radius, float radiusPerforation, const Color& color,
+            const float diffuse, const float reflex, const float refract, const float light)
+        : c(center), n(normal.normalize()), r(radius), rp(radiusPerforation), d(dot(n, distance(Point(0, 0, 0), center))), Figure(color, diffuse, reflex, refract, light) {}
 
     Direction getNormal(const Point& p) const {
         return n;
@@ -243,7 +298,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plani in which the disc is contained
-        return Plane(n, d, color).planeAgainstLight(camera, light, p);
+        return Plane(n, d, color, 0, 0, 0, 0).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -255,8 +310,9 @@ class Cylinder : public Figure {
     float h;      // Altura del cilindro
 
 public:
-    Cylinder (const Point& center, const Direction& axis, float radius, float height, const Color& color)
-        : c(center), ax(axis.normalize()), r(radius), h(height/2), Figure(color) {}
+    Cylinder (const Point& center, const Direction& axis, float radius, float height, const Color& color,
+            const float diffuse, const float reflex, const float refract, const float light)
+        : c(center), ax(axis.normalize()), r(radius), h(height/2), Figure(color, diffuse, reflex, refract, light) {}
 
     Direction getNormal(const Point& p) const {
         return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
@@ -314,7 +370,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         Direction planeNormal = distance(p, c) - dot(distance(p, c), ax) * ax;
-        return Plane(planeNormal, p, color).planeAgainstLight(camera, light, p);
+        return Plane(planeNormal, p, color, 0, 0, 0, 0).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -329,8 +385,10 @@ class Cone : public Figure {
 
 public:
 
-    Cone (const Point& center, const Direction& axis, float radius, float height, const Color& color)
-        : c(center), ax(axis.normalize()), r(radius), h(height), c2 (center+ax*height), h2(sqrt(r*r+h*h)), Figure(color) {}
+    Cone (const Point& center, const Direction& axis, float radius, float height, const Color& color,
+            const float diffuse, const float reflex, const float refract, const float light)
+        : c(center), ax(axis.normalize()), r(radius), h(height), c2 (center+ax*height),
+          h2(sqrt(r*r+h*h)), Figure(color, diffuse, reflex, refract, light) {}
 
     Direction getNormal(const Point& p) const {
         return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
@@ -381,7 +439,7 @@ public:
         Direction vertexToP = distance(p, c);
         Direction perpendicular2 = cross(vertexToP, distance(c2, c + vertexToP.normalize()*h2));
         Direction planeNormal = cross(vertexToP, perpendicular2).normalize();
-        return Plane(planeNormal, p, color).planeAgainstLight(camera, light, p);
+        return Plane(planeNormal, p, color, 0, 0, 0, 0).planeAgainstLight(camera, light, p);
     }
 };
 

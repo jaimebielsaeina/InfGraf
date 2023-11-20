@@ -22,10 +22,10 @@ int main () {
     cout << crossed(p1, 0, 0, p2, 180, 0) << endl;
 
     Ray r = Ray(Point(0, 0, 0), Direction(1, 0, 0));
-    Plane pl = Plane(Point(4, 0, 0), Direction(-1, 0, 0));
+    Plane pl = Plane(Direction(-1, 0, 0), 4, Color(1, 0, 0));
     float t;
     cout << pl.intersect(r, t) << " " << t << endl;
-    Sphere sp = Sphere(Point(4, 1.001, 0), 1);
+    Sphere sp = Sphere(Point(4, 1.001, 0), 1, Color(0, 1, 0));
     cout << sp.intersect(r, t) << " " << t << endl;
 
 }
