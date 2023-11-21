@@ -47,15 +47,8 @@ public:
         else if (r < noneRatio) return LIGHT;
         else return NONE;
     }
-    Color getFr(const Phenomenom& p) const {
-        switch (p) {
-        case DIFFUSE:
-            return color / M_PI;
-        case LIGHT:
-            return color;
-        default:
-            return Color(0);
-        }
+    Color getFr() const {
+        return color / M_PI;
     }
     Direction randBounce(const Point& p) const {
         //cout << p << endl;
@@ -68,9 +61,9 @@ public:
 
         Direction normal = getNormal(p);
         Direction res = Direction(randUnit.get(), randUnit.get(), randUnit.get());
-        while (res.mod() > 1 && dot(res, normal) < 0)
+        if (res.mod() > 1)
                 res = Direction(randUnit.get(), randUnit.get(), randUnit.get());
-        return res.normalize();
+        return dot(res, normal) > 0 ? res.normalize() : -res.normalize();
 
         //Genera un punto aleatorio en la esfera unitaria
         
@@ -90,7 +83,8 @@ public:
 
     Direction reflectionBounce (const Direction& d, const Point& p) const {
         Direction normal = getNormal(p);
-        return d - 2 * normal * dot(d, normal);
+        Direction dNorm = d.normalize();
+        return dNorm - 2 * normal * dot(dNorm, normal);
     }
 
     Direction refractionBounce (const Direction& d, const Point& p, float n1, float n2) const {
