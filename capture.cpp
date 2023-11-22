@@ -88,15 +88,15 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 						pxColor += closestFigure->color * scatter;
 						break;
 					} else if (ph == REFLECTION) {
-						rayDirection = closestFigure -> reflectionBounce(rayDirection, hit);
+						scatter *= closestFigure->getFr(ph, rayDirection, hit);
+
 					} else if (ph == REFRACTION) {
 						//rayDirection = closestFigure -> refractionBounce(hit);
 					} else {
 						for (int i = 0; i < lightSources.size(); ++i)
 							pxColor += getColorOfHit(closestFigure, figures, hit, lightSources[i], camera, scatter);
 
-						scatter *= closestFigure->color;
-						rayDirection = closestFigure -> randBounce(hit);
+						scatter *= M_PI * closestFigure->getFr(ph, rayDirection, hit);
 						/*if (dot(rayDirection, closestFigure->getNormal(hit)) < 0)
 								rayDirection = -rayDirection;*/
 					}

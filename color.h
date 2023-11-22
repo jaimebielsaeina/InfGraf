@@ -3,16 +3,29 @@
 #define COLOR_H
 #include <cstdint>
 
+#define Light char
+#define R 0
+#define G 1
+#define B 2
+
 class Color {
 public:
-    double r, g, b;
-    Color(double r, double g, double b) : r(r), g(g), b(b) {}
-    Color(double w) : r(w), g(w), b(w) {} // white
-    Color() : r(0), g(0), b(0) {}
+    double c[3];
+    Color(double r, double g, double b) { c[0] = r; c[1] = g; c[2] = b; }
+    Color(double w) : Color(w, w, w) {}
+    Color() : Color(0) {}
     ~Color() {}
 
+    double maxC() const {
+        return max(c[0], c[1], c[2]);
+    }
+    double maxC(Light& l) const {
+        l = c[0] > c[1] ? (c[0] > c[2] ? 0 : 2) : (c[1] > c[2] ? 1 : 2);
+        return c[l];
+    }
+
     friend Color operator+(const Color& c1, const Color& c2) {
-        return Color(c1.r + c2.r, c1.g + c2.g, c1.b + c2.b);
+        return Color(c1.c[0] + c2.c[0], c1.c[1] + c2.c[1], c1.c[2] + c2.c[2]);
     }
 
     friend Color operator+=(Color& c1, const Color& c2) {
@@ -21,7 +34,7 @@ public:
     }
 
     friend Color operator-(const Color& c1, const Color& c2) {
-        return Color(c1.r - c2.r, c1.g - c2.g, c1.b - c2.b);
+        return Color(c1.c[0] - c2.c[0], c1.c[1] - c2.c[1], c1.c[2] - c2.c[2]);
     }
 
     friend Color operator-=(Color& c1, const Color& c2) {
@@ -30,7 +43,7 @@ public:
     }
 
     friend Color operator*(const Color& c, double k) {
-        return Color(c.r * k, c.g * k, c.b * k);
+        return Color(c.c[0] * k, c.c[1] * k, c.c[2] * k);
     }
 
     friend Color operator*=(Color& c, double k) {
@@ -39,11 +52,11 @@ public:
     }
 
     friend Color operator*(double k, const Color& c) {
-        return Color(c.r * k, c.g * k, c.b * k);
+        return Color(c.c[0] * k, c.c[1] * k, c.[2] * k);
     }
 
     friend Color operator*(const Color& c1, const Color& c2) {
-        return Color(c1.r * c2.r, c1.g * c2.g, c1.b * c2.b);
+        return Color(c1.c[0] * c2.c[0], c1.c[1] * c2.c[1], c1.c[2] * c2.c[2]);
     }
 
     friend Color operator*=(Color& c1, const Color& c2) {
@@ -52,7 +65,7 @@ public:
     }
     
     friend Color operator/(const Color& c, double k) {
-        return Color(c.r / k, c.g / k, c.b / k);
+        return Color(c.c[0] / k, c.c[1] / k, c.c[2] / k);
     }
 
     friend Color operator/=(Color& c, double k) {
@@ -61,7 +74,7 @@ public:
     }
 
     friend ostream &operator<< (ostream &o, const Color &c){
-        o << c.r << " " << c.g << " " << c.b;
+        o << c.c[0] << " " << c.c[1] << " " << c.c[2];
         return o;
     }
     

@@ -8,6 +8,7 @@
 #include "lightSource.h"
 #include "randomGenerator.h"
 #include <cmath>
+#include <cstdint>
 
 enum Phenomenom {DIFFUSE, REFLECTION, REFRACTION, LIGHT, NONE};
 
@@ -33,22 +34,41 @@ public:
 class Figure {
 
 public:
-    Color color;
-    float reflexRatio, refracRatio, lightRatio, noneRatio;
+    Color kd, ks, kt, kl;
+    float n;
+    Light majorCh;
 public:
     virtual bool intersect(const Ray& ray, float& t) const = 0;
     virtual bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const = 0;
     virtual Direction getNormal(const Point& p) const = 0;
     Phenomenom getPhenomenom () const {
         float r = randGen.get();
-        if (r < reflexRatio) return DIFFUSE;
-        else if (r < refracRatio) return REFLECTION;
-        else if (r < lightRatio) return REFRACTION;
-        else if (r < noneRatio) return LIGHT;
-        else return NONE;
+        float aux = kd.c[majorCh];
+        if (r < aux) return DIFFUSE;
+        aux += ks.c[majorCh];
+        if (r < aux) return REFLECTION;
+        aux += kt.c[majorCh];
+        if (r < aux) return REFRACTION;
+        aux += kl.c[majorCh];
+        if (r < aux) return LIGHT;
+        return NONE;
     }
-    Color getFr() const {
-        return color / M_PI;
+    Color getFr(Phenomenom ph, Direction& d, Point& p) const {
+        switch (ph) {
+            case DIFFUSE:
+                d = randBounce(p);
+                return kd / (M_PI * kd.c[majorCh]);
+            case REFLECTION:
+                d = reflectionBounce(d, p);
+                return ks / (dot(d, getNormal(p)) * ks.c[majorCh]);
+            case REFRACTION:
+                d = refractionBounce(d, p, 1, n);
+                return kt;
+            case LIGHT:
+                return kl / kl.c[majorCh];
+            default:
+                return Color();
+        }
     }
     Direction randBounce(const Point& p) const {
         //cout << p << endl;
@@ -96,13 +116,25 @@ public:
         return (n1 / n2) * d + (n1 / n2 * cosTheta1 - cosTheta2) * normal;
     }
 
-    Figure (const Color& color, const float diffuse, const float reflex, const float refract, const float light) :
-            color(color), reflexRatio(diffuse), refracRatio(reflexRatio+reflex),
-            lightRatio(refracRatio+refract), noneRatio(lightRatio+light) {
-        if (noneRatio > 1) {
-            cout << "Error: the sum of figure color phenomenom ratios must be, as much, 1.\n";
-            exit(1);
+    Figure (const Color& diffuse, const Color& reflex, const Color& refract, const Color& light, const float nCoef) :
+            kd(diffuse), ks(reflex), kt(refract), kl(light), n(nCoef) {
+        Light lD, lS, lT, lL;
+        double maxD = diffuse.maxC(lD);
+        double maxS = reflex.maxC(lS);
+        double maxT = refract.maxC(lT);
+        double maxL = light.maxC(lL);
+        double maxContribution = max(max(maxD, maxS), max(maxT, maxL));
+        if(maxD == maxContribution) majorCh = lD;
+        else if(maxS == maxContribution) majorCh = lS;
+        else if(maxT == maxContribution) majorCh = lT;
+        else majorCh = lL;
+
+        for (int i = 0; i < 3; ++i)
+            if (kd.c[i] + ks.c[i] + kt.c[i] + kl.c[i] > 1) {
+                cout << "Error: the sum of figure color coeficients must be for channel, as much, 1.\n";
+                exit(1);
         }
+        
     }
     virtual ~Figure() {}
 
