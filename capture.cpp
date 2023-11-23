@@ -13,7 +13,8 @@ using namespace std;
 
 
 Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& hit,
-					 LightSource& lightSource, const Camera& camera, Color& scatter) {
+					 LightSource& lightSource, const Camera& camera, Color& scatter,
+					 Phenomenom ph, Direction rayDirection) {
 
 	// Check if the plane is against the light.
 	if (figure->planeAgainstLight(camera, lightSource, hit))
@@ -32,8 +33,7 @@ Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& h
 
 	Color Li = lightSource.power / (modDistanceToLight*modDistanceToLight);
 	float cosine = abs(dot(figure->getNormal(hit), distanceToLight.normalize()));
-
-	return Li * figure->getFr() * cosine * scatter;
+	return Li * figure->getFr(ph, rayDirection, hit) * cosine * scatter;
 
 }
 
@@ -85,16 +85,21 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 
 					if (ph == NONE) break;
 					else if (ph == LIGHT) {
-						pxColor += closestFigure->color * scatter;
+						pxColor += closestFigure->kl * scatter;
 						break;
-					} else if (ph == REFLECTION) {
-						scatter *= closestFigure->getFr(ph, rayDirection, hit);
-
+					} 
+					// REFLECTION
+					else if (ph == REFLECTION) {
+						pxColor += getColorOfHit(closestFigure, figures, hit, lightSources[0], camera, scatter, ph, rayDirection);
+						scatter *= closestFigure->ks;
+						rayDirection = closestFigure->reflectionBounce(rayDirection, hit);
 					} else if (ph == REFRACTION) {
 						//rayDirection = closestFigure -> refractionBounce(hit);
-					} else {
+					} 
+					// DIFFUSE
+					else {
 						for (int i = 0; i < lightSources.size(); ++i)
-							pxColor += getColorOfHit(closestFigure, figures, hit, lightSources[i], camera, scatter);
+							pxColor += getColorOfHit(closestFigure, figures, hit, lightSources[i], camera, scatter, ph, rayDirection);
 
 						scatter *= M_PI * closestFigure->getFr(ph, rayDirection, hit);
 						/*if (dot(rayDirection, closestFigure->getNormal(hit)) < 0)
@@ -118,7 +123,7 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 	output << "P3" << endl;
 	//output << "# MAX" << endl;
 	output << camera.width << " " << camera.height << endl;
-	output << "255" << endl;
+	
 
 	// Structure to store the final image.
 	vector<Color> finalImage(camera.height * camera.width);
@@ -133,6 +138,18 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 
 	// Wait for all threads to finish.
 	for (int t = 0; t < threads; t++) threadsArray[t].join();
+
+	// Finds the maximum value of the pixels.
+	float max = 0;
+	for (int i = 0; i < camera.height; i++) {
+		for (int j = 0; j < camera.width; j++) {
+			Color pxColor = finalImage[i*camera.width + j];
+			if (pxColor.c[0] > max) max = pxColor.c[0];
+			if (pxColor.c[1] > max) max = pxColor.c[1];
+			if (pxColor.c[2] > max) max = pxColor.c[2];
+		}
+	}
+	output << max << endl;
 
 	// Write the final image into the file.
 	for (int i = 0; i < camera.height; i++) {
@@ -163,17 +180,18 @@ int main(int argc, char* argv[]) {
     list<Figure*> listFigures = {};
 
 	// Defining the figures.
-	Plane* leftPlane = new Plane(Direction(1, 0, 0), 1, Color(1, 0, 0), 1, 0, 0, 0);
-	Plane* rightPlane = new Plane(Direction(-1, 0, 0), 1, Color(0, 1, 0), 1, 0, 0, 0);
-	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(0.8, 0.8, 0.8), 1, 0, 0, 0);
-	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0.8, 0.8, 0.8), 1, 0, 0, 0);
-	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(0.8, 0.8, 0.8), 1, 0, 0, 0);
+	Plane* leftPlane = new Plane(Direction(1, 0, 0), 1, Color(1, 0, 0), Color(0), Color(0), Color(0), 0);
+	Plane* rightPlane = new Plane(Direction(-1, 0, 0), 1, Color(0, 1, 0), Color(0), Color(0), Color(0), 0);
+	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(1, 1, 1), Color(0), Color(0), Color(0), 0);
+	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(1, 1, 1), Color(0), Color(0), Color(0), 0);
+	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(1, 1, 1), Color(0), Color(0), Color(0), 0); // 0,8
 
 	//Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.72, 0.95), 1, 0, 0, 0);
-	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.72, 0.94, 0.95), 0, 1, 0, 0);
+	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.894, 0.666, 1), Color(0), Color(0), Color(0), 0);
 	//Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0.72, 0.94, 0.95), 1, 0, 0, 0);
-	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0.72, 0.94, 0.95), 1, 0, 0, 0);
+	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0.553, 1, 1), Color(0), Color(0), 0);
 
+	/*
     Sphere* centerSphere = new Sphere(Point(0, -0.5, 0), 0.5, Color(1, 1, 0), 1, 0, 0, 0);
 
 	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 1), Point(-0.25, 1, 0), Color(1, 0.5, 0), 1, 0, 0, 0);
@@ -184,7 +202,7 @@ int main(int argc, char* argv[]) {
 	Cylinder* cylinder = new Cylinder(Point(-0.5, 0, 0.4), Direction(0, 0, 1), 0.2, 1.5, Color(0.5, 0, 1), 1, 0, 0, 0);
 
 	Cone* cone = new Cone (Point(0.5, -0.5, 0), Direction(0, 1, -0.2), 0.5, 0.5, Color(1, 0.5, 0), 1, 0, 0, 0);
-
+	*/
     listFigures.push_back(leftPlane);
     listFigures.push_back(rightPlane);
     listFigures.push_back(floorPlane);
@@ -192,7 +210,7 @@ int main(int argc, char* argv[]) {
     listFigures.push_back(backPlane);
 
     listFigures.push_back(leftSphere);
-    //listFigures.push_back(rightSphere);
+    listFigures.push_back(rightSphere);
 	
 	// listFigures.push_back(centerSphere);
 
@@ -204,7 +222,7 @@ int main(int argc, char* argv[]) {
 	
 	// Defining the light sources.
 	vector<LightSource> lightSources = {};
-	lightSources.push_back(LightSource(Point(0, 0.5, 0), Color(1, 1, 1)));
+	lightSources.push_back(LightSource(Point(0, 0.5, 0), Color(0.99, 0.99, 0.99)));
 	//lightSources.push_back(LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
 
 	// Capturing the scene and storing it at the specified file.

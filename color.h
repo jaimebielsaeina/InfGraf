@@ -17,7 +17,7 @@ public:
     ~Color() {}
 
     double maxC() const {
-        return max(c[0], c[1], c[2]);
+        return max(max(c[0], c[1]), c[2]);
     }
     double maxC(Light& l) const {
         l = c[0] > c[1] ? (c[0] > c[2] ? 0 : 2) : (c[1] > c[2] ? 1 : 2);
@@ -52,7 +52,7 @@ public:
     }
 
     friend Color operator*(double k, const Color& c) {
-        return Color(c.c[0] * k, c.c[1] * k, c.[2] * k);
+        return Color(c.c[0] * k, c.c[1] * k, c.c[2] * k);
     }
 
     friend Color operator*(const Color& c1, const Color& c2) {

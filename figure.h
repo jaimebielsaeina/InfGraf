@@ -53,7 +53,7 @@ public:
         if (r < aux) return LIGHT;
         return NONE;
     }
-    Color getFr(Phenomenom ph, Direction& d, Point& p) const {
+    Color getFr(Phenomenom ph, Direction& d, Point p) const {
         switch (ph) {
             case DIFFUSE:
                 d = randBounce(p);
@@ -119,11 +119,14 @@ public:
     Figure (const Color& diffuse, const Color& reflex, const Color& refract, const Color& light, const float nCoef) :
             kd(diffuse), ks(reflex), kt(refract), kl(light), n(nCoef) {
         Light lD, lS, lT, lL;
+        // Obtiene el canal con mayor contribución
         double maxD = diffuse.maxC(lD);
         double maxS = reflex.maxC(lS);
         double maxT = refract.maxC(lT);
         double maxL = light.maxC(lL);
-        double maxContribution = max(max(maxD, maxS), max(maxT, maxL));
+        double maxDS = max(maxD, maxS);
+        double maxTL = max(maxT, maxL);
+        double maxContribution = max(maxDS, maxTL);
         if(maxD == maxContribution) majorCh = lD;
         else if(maxS == maxContribution) majorCh = lS;
         else if(maxT == maxContribution) majorCh = lT;
@@ -137,7 +140,6 @@ public:
         
     }
     virtual ~Figure() {}
-
 };
 
 class Plane : public Figure {
@@ -146,13 +148,15 @@ class Plane : public Figure {
     float d;
 
 public:
-    Plane (const Direction& normal, float distance, const Color& color,
-            const float diffuse, const float reflex, const float refract, const float light) :
-            n(normal.normalize()), d(distance), Figure(color, diffuse, reflex, refract, light) {}
+    Plane (const Direction& normal, float distance, const Color& diffuse,
+            const Color& reflex, const Color& refract, const Color& light,
+            const float nCoef) :
+            n(normal.normalize()), d(distance), Figure(diffuse, reflex, refract, light, nCoef) {}
 
-    Plane (const Direction& normal, const Point& p, const Color& color,
-            const float diffuse, const float reflex, const float refract, const float light) :
-            n(normal.normalize()), d(abs(dot(n, distance(Point(0,0,0), p)))), Figure(color, diffuse, reflex, refract, light) {}
+    Plane (const Direction& normal, const Point& p, const Color& diffuse,
+            const Color& reflex, const Color& refract, const Color& light,
+            const float nCoef) :
+            n(normal.normalize()), d(abs(dot(n, distance(Point(0,0,0), p)))), Figure(diffuse, reflex, refract, light, nCoef) {}
             
     Direction getNormal(const Point& p) const {
         return n;
@@ -181,9 +185,10 @@ class Sphere : public Figure {
     Color color;
 
 public:
-    Sphere(const Point& c, float r, const Color& color,
-            const float diffuse, const float reflex, const float refract, const float light) :
-            c(c), r(r), Figure(color, diffuse, reflex, refract, light) {}
+    Sphere(const Point& c, float r, const Color& diffuse,
+            const Color& reflex, const Color& refract, const Color& light,
+            const float nCoef) :
+            c(c), r(r), Figure(diffuse, reflex, refract, light, nCoef) {}
 
     Direction getNormal(const Point& p) const {
         
@@ -255,7 +260,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plane in which the triangle is contained
-        return Plane(n, d, color, 0, 0, 0, 0).planeAgainstLight(camera, light, p);
+        return Plane(n, d, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
     }
 
 };
@@ -290,7 +295,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plani in which the disc is contained
-        return Plane(n, d, color, 0, 0, 0, 0).planeAgainstLight(camera, light, p);
+        return Plane(n, d, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -324,7 +329,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plani in which the disc is contained
-        return Plane(n, d, color, 0, 0, 0, 0).planeAgainstLight(camera, light, p);
+        return Plane(n, d, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -396,7 +401,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         Direction planeNormal = distance(p, c) - dot(distance(p, c), ax) * ax;
-        return Plane(planeNormal, p, color, 0, 0, 0, 0).planeAgainstLight(camera, light, p);
+        return Plane(planeNormal, p, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -465,7 +470,7 @@ public:
         Direction vertexToP = distance(p, c);
         Direction perpendicular2 = cross(vertexToP, distance(c2, c + vertexToP.normalize()*h2));
         Direction planeNormal = cross(vertexToP, perpendicular2).normalize();
-        return Plane(planeNormal, p, color, 0, 0, 0, 0).planeAgainstLight(camera, light, p);
+        return Plane(planeNormal, p, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
     }
 };
 
