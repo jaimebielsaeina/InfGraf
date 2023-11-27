@@ -90,11 +90,12 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 					} 
 					// REFLECTION
 					else if (ph == REFLECTION) {
-						pxColor += getColorOfHit(closestFigure, figures, hit, lightSources[0], camera, scatter, ph, rayDirection);
+						//pxColor += getColorOfHit(closestFigure, figures, hit, lightSources[0], camera, scatter, ph, rayDirection);
 						scatter *= closestFigure->ks;
 						rayDirection = closestFigure->reflectionBounce(rayDirection, hit);
 					} else if (ph == REFRACTION) {
-						//rayDirection = closestFigure -> refractionBounce(hit);
+						scatter *= closestFigure->kt;
+						rayDirection = closestFigure -> refractionBounce(hit, rayDirection, n?, n?);
 					} 
 					// DIFFUSE
 					else {
@@ -182,14 +183,14 @@ int main(int argc, char* argv[]) {
 	// Defining the figures.
 	Plane* leftPlane = new Plane(Direction(1, 0, 0), 1, Color(1, 0, 0), Color(0), Color(0), Color(0), 0);
 	Plane* rightPlane = new Plane(Direction(-1, 0, 0), 1, Color(0, 1, 0), Color(0), Color(0), Color(0), 0);
-	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(1, 1, 1), Color(0), Color(0), Color(0), 0);
-	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(1, 1, 1), Color(0), Color(0), Color(0), 0);
-	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(1, 1, 1), Color(0), Color(0), Color(0), 0); // 0,8
+	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(0.8), Color(0), Color(0), Color(0), 0);
+	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0.8), Color(0), Color(0), Color(0), 0);
+	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(0.8), Color(0), Color(0), Color(0), 0); // 0,8
 
 	//Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.72, 0.95), 1, 0, 0, 0);
-	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.894, 0.666, 1), Color(0), Color(0), Color(0), 0);
+	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.2765, 0.5, 0.5), Color(0.5, 0.5, 0.5), Color(0), Color(0), 0);
 	//Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0.72, 0.94, 0.95), 1, 0, 0, 0);
-	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0.553, 1, 1), Color(0), Color(0), 0);
+	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5), Color(0), 1.5);
 
 	/*
     Sphere* centerSphere = new Sphere(Point(0, -0.5, 0), 0.5, Color(1, 1, 0), 1, 0, 0, 0);
