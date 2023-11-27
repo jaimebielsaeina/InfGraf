@@ -63,7 +63,7 @@ public:
                 return ks / (dot(d, getNormal(p)) * ks.c[majorCh]);
             case REFRACTION:
                 d = refractionBounce(d, p, 1, n);
-                return kt;
+                return kt / kt.c[majorCh];
             case LIGHT:
                 return kl / kl.c[majorCh];
             default:
@@ -107,13 +107,17 @@ public:
         return (dNorm - 2 * normal * dot(dNorm, normal)).normalize();
     }
 
+    // n1: refractive index of the medium where the ray is coming from
+    // n2: refractive index of the medium where the ray is going to
     Direction refractionBounce (const Direction& d, const Point& p, float n1, float n2) const {
         Direction normal = getNormal(p);
-        float cosTheta1 = dot(d, normal);
-        float sinTheta1 = sqrt(1 - cosTheta1 * cosTheta1);
-        float sinTheta2 = (n1 / n2) * sinTheta1;
-        float cosTheta2 = sqrt(1 - sinTheta2 * sinTheta2);
-        return (n1 / n2) * d + (n1 / n2 * cosTheta1 - cosTheta2) * normal;
+        Direction dNorm = d.normalize();
+        float cosI = dot(dNorm, normal);
+        float n = n1 / n2;
+        float sinT2 = n * n * (1.0 - cosI * cosI);
+        if (sinT2 > 1.0) return Direction();
+        float cosT = sqrt(1.0 - sinT2);
+        return (n * dNorm + (n * cosI - cosT) * normal).normalize();
     }
 
     Figure (const Color& diffuse, const Color& reflex, const Color& refract, const Color& light, const float nCoef) :
