@@ -54,6 +54,9 @@ public:
         return NONE;
     }
     Color getFr(Phenomenom ph, Direction& d, Point p) const {
+        Direction wi;
+        Direction normal;
+        float eta;
         switch (ph) {
             case DIFFUSE:
                 d = randBounce(p);
@@ -62,7 +65,16 @@ public:
                 d = reflectionBounce(d, p);
                 return ks / ks.c[majorCh];
             case REFRACTION:
-                d = refractionBounce(d, p, 1, nRefraction);
+                wi = d;
+                wi = -wi.normalize();
+                normal = getNormal(p);
+                if(dot(wi, normal) < 0){
+                    normal = -normal;
+                    eta = nRefraction / 1;
+                } else{
+                    eta = 1 / nRefraction;
+                }
+                d = refractionBounce(wi, normal, eta);
                 return kt / kt.c[majorCh];
             case LIGHT:
                 return kl / kl.c[majorCh];
@@ -109,22 +121,13 @@ public:
 
     // n1: refractive index of the medium where the ray is coming from
     // n2: refractive index of the medium where the ray is going to
-    Direction refractionBounce (const Direction& d, const Point& p, double n1, double n2) const {
-        
-        Direction normal = getNormal(p);
-        Direction dNorm = -d.normalize();
-        float cosI = dot(dNorm, normal);
-        if(cosI < 0) {
-            normal = -normal;
-            cosI = -cosI;
-            swap(n1, n2);
-        }
-        float eta = n1 / n2;
-        float sinI2 = max(0.f, 1.0f - cosI * cosI);
-        float sinT2 = eta * eta * sinI2;
-        if (sinT2 >= 1.0) return reflectionBounce(d, p);
-        float cosT = sqrt(1.0 - sinT2);
-        return (eta * -dNorm + (eta * cosI - cosT) * normal).normalize();
+    Direction refractionBounce (const Direction& wi, const Direction& n, float eta) const {
+        float cosThetaI = dot(n, wi);
+        float sin2ThetaI = max(0.f, 1.0f - cosThetaI * cosThetaI);
+        float sin2ThetaT = eta * eta * sin2ThetaI;
+        //if (sin2ThetaT >= 1.0) cout << "problema" << endl;
+        float cosThetaT = sqrt(1 - sin2ThetaT);
+        return eta * -wi + (eta * cosThetaI - cosThetaT) * n;
         
 
 
@@ -159,7 +162,7 @@ public:
         */
 
 
-        
+
         /*
         Direction normal = getNormal(p);
         Direction dNorm = d.normalize();
@@ -259,6 +262,7 @@ public:
         return distance(p, c).normalize();
     }
     
+    // Add intersect when the ray comes from inside the sphere
     bool intersect(const Ray& ray, float& t) const {
         Vec4 oc = distance(ray.getPoint(), c);
         float a = dot(ray.getDirection(), ray.getDirection());
@@ -273,8 +277,14 @@ public:
             float t2 = (-b + sqrt(discriminant)) / (2 * a);
             if (t1 < 0 && t2 < 0)
                 return false;
-            if (t1 >= 0) t = t1;
-            if (t2 < t1 && t2 >= 0) t = t2;
+            if (t1 >= 0){
+                t = t1;
+                return true;
+            }
+            if (t2 >= 0){
+                t = t2;
+                return true;
+            }
             return true;
         }
     }

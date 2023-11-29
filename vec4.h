@@ -12,12 +12,12 @@ using namespace std;
 class Vec4 {
 
 protected:
-    double x, y, z;
+    float x, y, z;
     uint8_t isPoint;
 
 public:
     Vec4 () : x(0), y(0), z(0), isPoint(0) {}
-    Vec4 (double x, double y, double z, uint8_t isPoint) : x(x), y(y), z(z), isPoint(isPoint) {}
+    Vec4 (float x, float y, float z, uint8_t isPoint) : x(x), y(y), z(z), isPoint(isPoint) {}
 
 public:
     // static Vec4 Point (double x, double y, double z) {
@@ -107,7 +107,7 @@ public:
         return c / s;
     }
 
-    double mod() const {
+    float mod() const {
         if (isPoint) {
             cout << "Error: Vec4 operand must be a direction.\n";
         }
@@ -121,7 +121,7 @@ public:
         return *this / mod();
     }
 
-    friend double dot (const Vec4 &c1, const Vec4 &c2) {
+    friend float dot (const Vec4 &c1, const Vec4 &c2) {
         if(c1.isPoint || c2.isPoint){
             cout << "Error: both operands must be directions.\n";
         }
@@ -248,7 +248,7 @@ public:
 class Point : public Vec4 {
 public:
     Point () : Vec4(0, 0, 0, 1) {}
-    Point (double x, double y, double z) : Vec4(x, y, z, 1) {}
+    Point (float x, float y, float z) : Vec4(x, y, z, 1) {}
     Point (Vec4 v) : Vec4(v.getX(), v.getY(), v.getZ(), 1) {}
     friend Vec4 toVec4 (Point p) {
         return Vec4(p.getX(), p.getY(), p.getZ(), 1);
@@ -258,7 +258,7 @@ public:
 class Direction : public Vec4 {
 public:
     Direction () : Vec4(0, 0, 0, 0) {}
-    Direction (double x, double y, double z) : Vec4(x, y, z, 0) {}
+    Direction (float x, float y, float z) : Vec4(x, y, z, 0) {}
     Direction (Vec4 v) : Vec4(v.getX(), v.getY(), v.getZ(), 0) {}
     friend Vec4 toVec4 (Direction d) {
         return Vec4(d.getX(), d.getY(), d.getZ(), 0);

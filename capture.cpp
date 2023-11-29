@@ -150,7 +150,7 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 			if (pxColor.c[2] > max) max = pxColor.c[2];
 		}
 	}
-	output << max * 225 /raysPerPixel << endl;
+	output << max * 255 / raysPerPixel << endl;
 
 	// Write the final image into the file.
 	for (int i = 0; i < camera.height; i++) {
@@ -193,8 +193,6 @@ int main(int argc, char* argv[]) {
 	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0), Color(1), Color(0), 1.5);
 
 	/*
-    Sphere* centerSphere = new Sphere(Point(0, -0.5, 0), 0.5, Color(1, 1, 0), 1, 0, 0, 0);
-
 	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 1), Point(-0.25, 1, 0), Color(1, 0.5, 0), 1, 0, 0, 0);
 
 	Disc* disc = new Disc(Point(-0.6, 0.6, 0), Direction(-2, 1, 1), 0.2, Color(0, 1, 1), 1, 0, 0, 0);
