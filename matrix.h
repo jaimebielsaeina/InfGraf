@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <cmath>
 #include <math.h>
+#include "vec4.h"
 using namespace std;
 
 class Matrix {
@@ -71,7 +72,7 @@ public:
         m[2][2] = 1;
         m[3][3] = 1;
     }
-
+    
     // Función para intercambiar dos filas de una matriz
     void swapRows(Matrix matrix, int row1, int row2) {
         for (int i = 0; i < DIM; i++) {

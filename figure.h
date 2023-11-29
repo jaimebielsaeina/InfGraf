@@ -35,7 +35,7 @@ class Figure {
 
 public:
     Color kd, ks, kt, kl;
-    float n;
+    float nRefraction;
     Light majorCh;
 public:
     virtual bool intersect(const Ray& ray, float& t) const = 0;
@@ -60,9 +60,9 @@ public:
                 return kd / (M_PI * kd.c[majorCh]);
             case REFLECTION:
                 d = reflectionBounce(d, p);
-                return ks / (dot(d, getNormal(p)) * ks.c[majorCh]);
+                return ks / ks.c[majorCh];
             case REFRACTION:
-                d = refractionBounce(d, p, 1, n);
+                d = refractionBounce(d, p, 1, nRefraction);
                 return kt / kt.c[majorCh];
             case LIGHT:
                 return kl / kl.c[majorCh];
@@ -109,19 +109,79 @@ public:
 
     // n1: refractive index of the medium where the ray is coming from
     // n2: refractive index of the medium where the ray is going to
-    Direction refractionBounce (const Direction& d, const Point& p, float n1, float n2) const {
+    Direction refractionBounce (const Direction& d, const Point& p, double n1, double n2) const {
+        
+        Direction normal = getNormal(p);
+        Direction dNorm = -d.normalize();
+        float cosI = dot(dNorm, normal);
+        if(cosI < 0) {
+            normal = -normal;
+            cosI = -cosI;
+            swap(n1, n2);
+        }
+        float eta = n1 / n2;
+        float sinI2 = max(0.f, 1.0f - cosI * cosI);
+        float sinT2 = eta * eta * sinI2;
+        if (sinT2 >= 1.0) return reflectionBounce(d, p);
+        float cosT = sqrt(1.0 - sinT2);
+        return (eta * -dNorm + (eta * cosI - cosT) * normal).normalize();
+        
+
+
+
+        // Calcular ángulo de incidencia del vector d con la normal
+        /*
+        double aux;
         Direction normal = getNormal(p);
         Direction dNorm = d.normalize();
-        float cosI = dot(dNorm, normal);
-        float n = n1 / n2;
-        float sinT2 = n * n * (1.0 - cosI * cosI);
-        if (sinT2 > 1.0) return Direction();
-        float cosT = sqrt(1.0 - sinT2);
-        return (n * dNorm + (n * cosI - cosT) * normal).normalize();
+        double cosTheta1 = dot(dNorm, normal);
+        if(cosTheta1 < 0) {
+            normal = -normal;
+            cosTheta1 = -cosTheta1;
+        } else {
+            aux = n1;
+            n1 = n2;
+            n2 = aux;
+        }
+        double sinTheta1 = sin(cosTheta1);
+        double cosSinTheta1 = n1 * sinTheta1;
+        double sinTheta2 = n1 * cosSinTheta1 / n2;
+        double angle = asin(sinTheta2);
+        if (sinTheta2 > 1) {
+            //cout << "Total internal reflection\n";
+            return reflectionBounce(d, p);
+        }
+        // Calcular vector de refracción con el angulo calculado
+        Direction perpendicular1 = cross(normal, dNorm);
+        Direction perpendicular2 = cross(normal, perpendicular1);
+        Direction refracted =
+        return refracted.normalize();
+        */
+
+
+        
+        /*
+        Direction normal = getNormal(p);
+        Direction dNorm = d.normalize();
+        double thetaI = acos(dot(-dNorm, normal));
+        if (thetaI < 0) {
+            normal = -normal;
+            thetaI = -thetaI;
+            swap(n1, n2);
+        }
+        double thetaR = asin(n1 * sin(acos(thetaI)) / n2);
+        Direction perpendicular1 = cross(normal, dNorm);
+        Direction perpendicular2 = cross(normal, perpendicular1);
+        //if (dot(dNorm, perpendicular2) < 0) perpendicular2 = -perpendicular2;
+        //return -normal * sin(thetaR) + perpendicular2 * cos(thetaR);
+        perpendicular2.rotateZ(thetaR);
+        return perpendicular2;
+        */
+        
     }
 
     Figure (const Color& diffuse, const Color& reflex, const Color& refract, const Color& light, const float nCoef) :
-            kd(diffuse), ks(reflex), kt(refract), kl(light), n(nCoef) {
+            kd(diffuse), ks(reflex), kt(refract), kl(light), nRefraction(nCoef) {
         Light lD, lS, lT, lL;
         // Obtiene el canal con mayor contribución
         double maxD = diffuse.maxC(lD);
