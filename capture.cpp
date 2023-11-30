@@ -43,7 +43,7 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
     Vec4 modU = camera.u.normalize();
 	Vec4 sightOrigin = camera.f + camera.l + camera.u;	// Get the point located at the top left corner of the image.
 	randomGenerator rand(0, 1);							// Random number generator.
-	Color pxColor;										// Stores the total color for the pixel.
+	Color pxColor, rayColor;										// Stores the total color for the pixel.
 
 	Direction rayDirection;								// Direction of the next ray.
 	Ray ray;											// Next ray.
@@ -58,6 +58,9 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 		for (int j = 0; j < camera.width; j++) {
 			pxColor = Color();
 			for (int k = 0; k < raysPerPixel; k++) {
+
+				// Ray color which starts being 0.
+				rayColor = Color();
 
 				// Get the direction of the ray.
 				rayDirection = Direction(sightOrigin - (j+rand.get())*camera.widthPerPixel*modL - (i+rand.get())*camera.heightPerPixel*modU);
@@ -81,11 +84,18 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 					hit = ray.getPoint() + minT*ray.getDirection();
 					//hit = hit + 1e-8 * closestFigure->getNormal(hit);
 
+					/*if (ph == REFRACTION) {
+
+						closestFigure->getFr(ph, rayDirection, hit);
+						ph = NONE;
+
+					} else {*/
+
 					ph = closestFigure->getPhenomenom();
 
 					if (ph == NONE) break;
 					else if (ph == LIGHT) {
-						pxColor += closestFigure->kl * scatter;
+						rayColor += closestFigure->kl * scatter;
 						break;
 					} 
 					// REFLECTION
@@ -99,15 +109,20 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 					// DIFFUSE
 					else {
 						for (int i = 0; i < lightSources.size(); ++i)
-							pxColor += getColorOfHit(closestFigure, figures, hit, lightSources[i], camera, scatter, ph, rayDirection);
+							rayColor += getColorOfHit(closestFigure, figures, hit, lightSources[i], camera, scatter, ph, rayDirection);
 
 						scatter *= M_PI * closestFigure->getFr(ph, rayDirection, hit);
 						/*if (dot(rayDirection, closestFigure->getNormal(hit)) < 0)
 								rayDirection = -rayDirection;*/
 					}
+					//}
 					hit = hit + 1e-4 * rayDirection;
 					ray = Ray(hit, rayDirection);
 				}
+				if (isnan(rayColor.c[0]) || isnan(rayColor.c[1]) || isnan(rayColor.c[2]))
+						k--;
+				else
+						pxColor += rayColor;
 			}
 			pixelsValue[i*camera.width + j] = pxColor;
 		}
@@ -184,13 +199,13 @@ int main(int argc, char* argv[]) {
 	Plane* leftPlane = new Plane(Direction(1, 0, 0), 1, Color(1, 0, 0), Color(0), Color(0), Color(0), 0);
 	Plane* rightPlane = new Plane(Direction(-1, 0, 0), 1, Color(0, 1, 0), Color(0), Color(0), Color(0), 0);
 	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(1), Color(0), Color(0), Color(0), 0);
-	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(1), Color(0), Color(0), Color(0), 0);
+	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0), Color(0), Color(0), Color(1), 0);
 	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(1), Color(0), Color(0), Color(0), 0); // 0,8
 
 	//Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.72, 0.95), 1, 0, 0, 0);
 	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.2765, 0.5, 0.5), Color(0.5), Color(0), Color(0), 0);
 	//Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0.72, 0.94, 0.95), 1, 0, 0, 0);
-	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0), Color(1), Color(0), 1.5);
+	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0.2), Color(0.8), Color(0), 1.5);
 
 	/*
 	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 1), Point(-0.25, 1, 0), Color(1, 0.5, 0), 1, 0, 0, 0);
