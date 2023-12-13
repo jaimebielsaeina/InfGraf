@@ -73,6 +73,14 @@ public:
         return c;
     }
 
+    const double& operator[](int i) const {
+        return c[i];
+    }
+
+    const double& sum() const {
+        return c[0] + c[1] + c[2];
+    }
+
     friend ostream &operator<< (ostream &o, const Color &c){
         o << c.c[0] << " " << c.c[1] << " " << c.c[2];
         return o;

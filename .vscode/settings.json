@@ -55,6 +55,7 @@
         "xutility": "cpp",
         "ratio": "cpp",
         "stop_token": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "array": "cpp"
     }
 }

@@ -6,8 +6,13 @@
 #include <string>
 #include <iostream>
 #include <ostream>
+#include <array>
 #include "matrix.h"
+#include "randomGenerator.h"
 using namespace std;
+
+randomGenerator randPhi(0, 2*M_PI);
+randomGenerator randTheta(-1, 1);
 
 class Vec4 {
 
@@ -231,6 +236,18 @@ public:
         return c1.x == c2.x && c1.y == c2.y && c1.z == c2.z && c1.isPoint == c2.isPoint;
     }
 
+    const float& operator[](int i) const {
+        switch (i%3) {
+            case 0: return x;
+            case 1: return y;
+            case 2: return z;
+        }
+    }
+
+    array<float, 3Ui64> asThree() const {
+        return {x, y, z};
+    }
+
     // devuelve el angulo entre dos direcciones en radianes
     friend double angleBetweenDirections (const Vec4 &c1, const Vec4 &c2) {
         if(c1.isPoint || c2.isPoint){
@@ -262,6 +279,10 @@ public:
     Direction (Vec4 v) : Vec4(v.getX(), v.getY(), v.getZ(), 0) {}
     friend Vec4 toVec4 (Direction d) {
         return Vec4(d.getX(), d.getY(), d.getZ(), 0);
+    }
+    friend Direction randomDirection() {
+        double phi = randPhi.get(), theta = acos(randTheta.get());
+        return Direction(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
     }
 };
 
