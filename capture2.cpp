@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include "vec4.h"
 #include "figure.h"
 #include "camera.h"
@@ -33,13 +35,12 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 	Figure* closestFigure;								// Stores the closest figure to the camera.
 	Color scatter;										// Stores the color of the light scattered by the figure.
 	Phenomenom ph;
-	
+
 	for (int i = minH; i < maxH; i++) {
 		//cout << i << endl;
 		for (int j = 0; j < camera.width; j++) {
 			pxColor = Color();
 			for (int k = 0; k < raysPerPixel; k++) {
-
 				// Ray color which starts being 0.
 				rayColor = Color();
 
@@ -75,10 +76,12 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 					} 
 					// DIFFUSE
 					else {
+						cout << "diffuse" << endl;
 						auto nearestPhotons = search_nearest(photonMap, hit, 100, 1e-1);
-						for (auto photon : nearestPhotons) {
-							//cout << photon.flux << endl;
-							rayColor += photonContribution(photon, closestFigure, ph, rayDirection, 1e-1);
+						cout << "nearest photons: " << nearestPhotons.size() << endl;
+						for (const Photon* photon : nearestPhotons) {
+							const Point p = photon->pos;
+							cout << p << endl;
 						}
 						break;
 					}
@@ -97,7 +100,7 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 
 // Capture the scene from the camera's point of view
 void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int N, int raysPerPixel, int maxBounces, int threads, string fileName) {
-
+	float t;											// Stores the distance to the closest figure.
 	// Open the file to write the image.
 	std::ofstream output(fileName);
 
@@ -109,37 +112,39 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 
 	// Structure to store the final image.
 	vector<Color> finalImage(camera.height * camera.width);
-
+	
 	// Argumento N que indica el númeor de rayos que se lanzan
 	int* samplesForLightSource = new int[lightSources.size()];
 	float powerSum = 0;
-	for (int i = 0; i < lightSources.size(); ++i)
+	for (int i = 0; i < lightSources.size(); ++i){
 			powerSum += lightSources[i].power.sum();
-
+	}
 	// For each light source, calculate the number of samples.
 	for (int i = 0; i < lightSources.size(); ++i)
 			samplesForLightSource[i] = N * lightSources[i].power.sum() / powerSum;
 
 	list<Photon> photons;
-
+	
 	for (int i = 0; i < lightSources.size(); ++i) {
 		for (int j = 0, k = 0; j < samplesForLightSource[i]; ++j) {
-			Direction dir = randomDirection();
+			Direction dir;
+			dir = dir.randomDirection();
 			Color flux = 4 * M_PI * lightSources[i].power / samplesForLightSource[i];
 			Ray ray = Ray(lightSources[i].center, dir);
-			while (true) {
-
-
+			while (true) {				
 
 				float minT = 1e6;
 				Figure* closestFigure = nullptr;
-				for (Figure* figure : figures)
-					if (figure->intersect(ray, minT) && minT < minT) {
-						minT = minT;
+				for (Figure* figure : figures){
+					if (figure->intersect(ray, t) && t < minT) {
+						minT = t;
 						closestFigure = figure;
 					}
+				}
 				if (closestFigure == nullptr) break;
-				Point hit = ray.getPoint() + minT*ray.getDirection();
+				Vec4 hitVec = ray.getPoint() + minT*ray.getDirection();
+				Point hit = Point(hitVec);
+				//cout << "hit: " << hit << endl;
 				Direction normal = closestFigure->getNormal(hit);
 			
 				Phenomenom ph = closestFigure->getPhenomenom();
@@ -151,7 +156,8 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 					ray = Ray(hit, refraction);
 				} */
 				if (ph == DIFFUSE) {
-					photons.push_back(Photon(hit, dir, flux));
+					Photon photon = Photon(hit, dir, flux);
+					photons.push_back(photon);
 					flux *= closestFigure->getFr(ph, dir, hit);
 				} else break;
 				hit = hit + 1e-4 * dir;
@@ -160,9 +166,9 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 			}
 		}
 	}
-
+	
 	PhotonMap photonMap = PhotonMap(photons, PhotonAxisPosition());
-
+	
 	// Divide the work between the threads. Each one will capture a section of the image.
 	vector<thread> threadsArray(threads);
 	for (int t = 0; t < threads; t++) {
@@ -170,10 +176,9 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 		int maxH = (t + 1) * camera.height / threads;
 		threadsArray[t] = thread(&captureSection, ref(camera), ref(figures), ref(photonMap), raysPerPixel, maxBounces, minH, maxH, ref(finalImage));
 	}
-
+	
 	// Wait for all threads to finish.
 	for (int t = 0; t < threads; t++) threadsArray[t].join();
-
 	// Finds the maximum value of the pixels.
 	float max = 0;
 	for (int i = 0; i < camera.height; i++) {
@@ -257,7 +262,7 @@ int main(int argc, char* argv[]) {
 	vector<LightSource> lightSources = {};
 	lightSources.push_back(LightSource(Point(0, 0.5, 0), Color(0.99, 0.99, 0.99)));
 	//lightSources.push_back(LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
-
+	
 	// Capturing the scene and storing it at the specified file.
-    capture(camera, listFigures, lightSources, 100, stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[1]);
+    capture(camera, listFigures, lightSources, 10000, stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[1]);
 }

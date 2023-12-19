@@ -11,8 +11,8 @@
 #include "randomGenerator.h"
 using namespace std;
 
-randomGenerator randPhi(0, 2*M_PI);
-randomGenerator randTheta(-1, 1);
+randomGenerator randPhi2(0, 2*M_PI);
+randomGenerator randTheta2(-1, 1);
 
 class Vec4 {
 
@@ -244,7 +244,7 @@ public:
         }
     }
 
-    array<float, 3Ui64> asThree() const {
+    array<float, 3> asThree() const {
         return {x, y, z};
     }
 
@@ -280,8 +280,8 @@ public:
     friend Vec4 toVec4 (Direction d) {
         return Vec4(d.getX(), d.getY(), d.getZ(), 0);
     }
-    friend Direction randomDirection() {
-        double phi = randPhi.get(), theta = acos(randTheta.get());
+    Direction randomDirection() {
+        double phi = randPhi2.get(), theta = acos(randTheta2.get());
         return Direction(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
     }
 };

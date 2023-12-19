@@ -1,3 +1,5 @@
+#ifndef PHOTON_H
+#define PHOTON_H
 #include "vec4.h"
 #include "color.h"
 
@@ -14,3 +16,5 @@ public:
     Photon (Point position, Direction incident, Color flux) : pos(position), incident(incident), flux(flux) {}
     float position(int i) const { return pos[i]; }
 };
+
+#endif

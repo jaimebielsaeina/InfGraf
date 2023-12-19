@@ -77,7 +77,7 @@ public:
         return c[i];
     }
 
-    const double& sum() const {
+    double sum(){
         return c[0] + c[1] + c[2];
     }
 
