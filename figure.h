@@ -53,6 +53,9 @@ public:
         if (r < aux) return LIGHT;
         return NONE;
     }
+    Color getFrDiffuse() {
+        return kd / (M_PI * kd.c[majorCh]);
+    }
     Color getFr(Phenomenom ph, Direction& d, Point p) const {
         Direction wi;
         Direction normal;

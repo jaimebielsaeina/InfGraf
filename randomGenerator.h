@@ -12,7 +12,9 @@ class randomGenerator {
 
 public:
 	// Constructor.
-	randomGenerator(double a, double b) : gen(std::time(0)), dist(a, b) {}
+	randomGenerator(double a, double b) : gen(std::time(0)), dist(a, b) {
+		srand(time(NULL));
+	}
 
 	// Devuelve un número aleatorio antre los límites del generador.
 	double get() { return dist(gen); }

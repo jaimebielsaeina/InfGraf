@@ -37,7 +37,7 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 	Phenomenom ph;
 
 	for (int i = minH; i < maxH; i++) {
-		//cout << i << endl;
+		cout << i << endl;
 		for (int j = 0; j < camera.width; j++) {
 			pxColor = Color();
 			for (int k = 0; k < raysPerPixel; k++) {
@@ -76,12 +76,15 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 					} 
 					// DIFFUSE
 					else {
-						cout << "diffuse" << endl;
-						auto nearestPhotons = search_nearest(photonMap, hit, 100, 1e-1);
-						cout << "nearest photons: " << nearestPhotons.size() << endl;
+						//cout << "diffuse" << endl;
+						// vector <const Photon*> nearestPhotons = search_nearest(photonMap, hit, 100, 1e-1);
+						vector <const Photon*> nearestPhotons = photonMap.nearest_neighbors(hit, 500, 1e-1);
+						//cout << "nearest photons: " << nearestPhotons.size() << endl;
 						for (const Photon* photon : nearestPhotons) {
-							const Point p = photon->pos;
-							cout << p << endl;
+							Photon p = *photon;
+							//cout << p << endl;
+							//float r = distance(hit, p.pos).mod();
+							rayColor += closestFigure->getFrDiffuse() * p.flux / 1e-2;
 						}
 						break;
 					}
@@ -128,6 +131,7 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 	for (int i = 0; i < lightSources.size(); ++i) {
 		for (int j = 0, k = 0; j < samplesForLightSource[i]; ++j) {
 			Direction dir;
+			srand(time(NULL));
 			dir = dir.randomDirection();
 			Color flux = 4 * M_PI * lightSources[i].power / samplesForLightSource[i];
 			Ray ray = Ray(lightSources[i].center, dir);
@@ -214,7 +218,7 @@ int main(int argc, char* argv[]) {
 	Direction l = Direction(-1, 0, 0); // l.rotateY(-15);
 	Direction u = Direction(0, 1, 0); // u.rotateY(-15);
 	Direction f = Direction(0, 0, 3); // f.rotateY(-15);
-    Camera camera = Camera(Point(0, 0, -3.5), l, u, f, 512, 512);
+    Camera camera = Camera(Point(0, 0, -3.5), l, u, f, 128, 128);
 	
 	// Defining the scene.
     list<Figure*> listFigures = {};
@@ -264,5 +268,5 @@ int main(int argc, char* argv[]) {
 	//lightSources.push_back(LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
 	
 	// Capturing the scene and storing it at the specified file.
-    capture(camera, listFigures, lightSources, 10000, stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[1]);
+    capture(camera, listFigures, lightSources, 50000, stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[1]);
 }

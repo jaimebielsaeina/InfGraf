@@ -15,6 +15,11 @@ public:
     // It returns the axis i position (x, y or z)
     Photon (Point position, Direction incident, Color flux) : pos(position), incident(incident), flux(flux) {}
     float position(int i) const { return pos[i]; }
+    friend ostream& operator<<(ostream& os, Photon p) {
+        os << p.pos << " " << p.incident << " " << p.flux;
+        // os << "a";
+        return os;
+    }
 };
 
 #endif

@@ -242,6 +242,7 @@ public:
             case 1: return y;
             case 2: return z;
         }
+        return x;
     }
 
     array<float, 3> asThree() const {
