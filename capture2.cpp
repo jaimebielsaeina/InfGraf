@@ -78,7 +78,7 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 					else {
 						//cout << "diffuse" << endl;
 						// vector <const Photon*> nearestPhotons = search_nearest(photonMap, hit, 100, 1e-1);
-						vector <const Photon*> nearestPhotons = photonMap.nearest_neighbors(hit, 500, 1e-1);
+						vector <const Photon*> nearestPhotons = photonMap.nearest_neighbors(hit, 100, 1e-1);
 						//cout << "nearest photons: " << nearestPhotons.size() << endl;
 						for (const Photon* photon : nearestPhotons) {
 							Photon p = *photon;
@@ -127,11 +127,11 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 			samplesForLightSource[i] = N * lightSources[i].power.sum() / powerSum;
 
 	list<Photon> photons;
+	srand(time(NULL));
 	
 	for (int i = 0; i < lightSources.size(); ++i) {
 		for (int j = 0, k = 0; j < samplesForLightSource[i]; ++j) {
 			Direction dir;
-			srand(time(NULL));
 			dir = dir.randomDirection();
 			Color flux = 4 * M_PI * lightSources[i].power / samplesForLightSource[i];
 			Ray ray = Ray(lightSources[i].center, dir);
@@ -218,7 +218,7 @@ int main(int argc, char* argv[]) {
 	Direction l = Direction(-1, 0, 0); // l.rotateY(-15);
 	Direction u = Direction(0, 1, 0); // u.rotateY(-15);
 	Direction f = Direction(0, 0, 3); // f.rotateY(-15);
-    Camera camera = Camera(Point(0, 0, -3.5), l, u, f, 128, 128);
+    Camera camera = Camera(Point(0, 0, -3.5), l, u, f, 512, 512);
 	
 	// Defining the scene.
     list<Figure*> listFigures = {};
@@ -226,9 +226,9 @@ int main(int argc, char* argv[]) {
 	// Defining the figures.
 	Plane* leftPlane = new Plane(Direction(1, 0, 0), 1, Color(1, 0, 0), Color(0), Color(0), Color(0), 0);
 	Plane* rightPlane = new Plane(Direction(-1, 0, 0), 1, Color(0, 1, 0), Color(0), Color(0), Color(0), 0);
-	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(1), Color(0), Color(0), Color(0), 0);
-	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0), Color(0), Color(0), Color(1), 0);
-	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(1), Color(0), Color(0), Color(0), 0); // 0,8
+	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(0.8), Color(0), Color(0), Color(0), 0);
+	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0.8), Color(0), Color(0), Color(0), 0);
+	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(0.8), Color(0), Color(0), Color(0), 0); // 0,8
 
 	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.72, 0.95), Color(0), Color(0), Color(0), 0);
 	//Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.2765, 0.5, 0.5), Color(0.5), Color(0), Color(0), 0);
@@ -264,9 +264,9 @@ int main(int argc, char* argv[]) {
 	
 	// Defining the light sources.
 	vector<LightSource> lightSources = {};
-	lightSources.push_back(LightSource(Point(0, 0.5, 0), Color(0.99, 0.99, 0.99)));
+	lightSources.push_back(LightSource(Point(0.3, 0.5, 0), Color(0.99, 0.99, 0.99)));
 	//lightSources.push_back(LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
 	
 	// Capturing the scene and storing it at the specified file.
-    capture(camera, listFigures, lightSources, 50000, stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[1]);
+    capture(camera, listFigures, lightSources, 10000, stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[1]);
 }

@@ -282,8 +282,15 @@ public:
         return Vec4(d.getX(), d.getY(), d.getZ(), 0);
     }
     Direction randomDirection() {
-        double phi = randPhi2.get(), theta = acos(randTheta2.get());
-        return Direction(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
+        /*double phi = randPhi2.get(), theta = acos(randTheta2.get());
+        return Direction(sin(theta) * sin(phi), sin(theta) * cos(phi), cos(theta));*/
+        double x = randTheta2.get(), y = randTheta2.get(), z = randTheta2.get();
+        while (x*x + y*y + z*z > 1) {
+            x = randTheta2.get();
+            y = randTheta2.get();
+            z = randTheta2.get();
+        }
+        return Direction(x, y, z).normalize();
     }
 };
 
