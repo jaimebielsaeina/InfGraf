@@ -70,21 +70,21 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 					} 
 					// REFLECTION
 					else if (ph == REFLECTION) {
-						//rayDirection = closestFigure->reflectionBounce(rayDirection, hit);
+						rayDirection = closestFigure->reflectionBounce(rayDirection, hit);
 					} else if (ph == REFRACTION) {
-						//rayDirection = closestFigure->refractionBounce(rayDirection, hit);
+						closestFigure->getFr(ph, rayDirection, hit);
 					} 
 					// DIFFUSE
 					else {
 						//cout << "diffuse" << endl;
 						// vector <const Photon*> nearestPhotons = search_nearest(photonMap, hit, 100, 1e-1);
-						vector <const Photon*> nearestPhotons = photonMap.nearest_neighbors(hit, 100, 1e-1);
+						vector <const Photon*> nearestPhotons = photonMap.nearest_neighbors(hit, 500, 1e-1);
 						//cout << "nearest photons: " << nearestPhotons.size() << endl;
 						for (const Photon* photon : nearestPhotons) {
 							Photon p = *photon;
 							//cout << p << endl;
 							//float r = distance(hit, p.pos).mod();
-							rayColor += closestFigure->getFrDiffuse() * p.flux / 1e-2;
+							rayColor += closestFigure->getFrDiffuse() * p.flux / (M_PI * 1e-2);
 						}
 						break;
 					}
@@ -152,14 +152,11 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 				Direction normal = closestFigure->getNormal(hit);
 			
 				Phenomenom ph = closestFigure->getPhenomenom();
-				/*if (ph == REFLECTION) {
-					photons.push_back(Photon(hit, reflection, flux));
-					ray = Ray(hit, reflection);
+				if (ph == REFLECTION) {
+					dir = closestFigure->reflectionBounce(dir, hit);
 				} else if (ph == REFRACTION) {
-					photons.push_back(Photon(hit, refraction, flux));
-					ray = Ray(hit, refraction);
-				} */
-				if (ph == DIFFUSE) {
+					closestFigure->getFr(ph, dir, hit);
+				} else if (ph == DIFFUSE) {
 					Photon photon = Photon(hit, dir, flux);
 					photons.push_back(photon);
 					flux *= closestFigure->getFr(ph, dir, hit);
@@ -230,9 +227,9 @@ int main(int argc, char* argv[]) {
 	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0.8), Color(0), Color(0), Color(0), 0);
 	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(0.8), Color(0), Color(0), Color(0), 0); // 0,8
 
-	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.72, 0.95), Color(0), Color(0), Color(0), 0);
+	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.16, 0.57), Color(0), Color(0), Color(0), 0);
 	//Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.2765, 0.5, 0.5), Color(0.5), Color(0), Color(0), 0);
-	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0.72, 0.94, 0.95), Color(0), Color(0), Color(0), 0);
+	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0), Color(0.72, 0.94, 0.95), Color(0), 1.5);
 	//Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0.2), Color(0.8), Color(0), 1.5);
 
 	/*
@@ -264,7 +261,7 @@ int main(int argc, char* argv[]) {
 	
 	// Defining the light sources.
 	vector<LightSource> lightSources = {};
-	lightSources.push_back(LightSource(Point(0.3, 0.5, 0), Color(0.99, 0.99, 0.99)));
+	lightSources.push_back(LightSource(Point(0, 0.5, 0), Color(0.99, 0.99, 0.99)));
 	//lightSources.push_back(LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
 	
 	// Capturing the scene and storing it at the specified file.
