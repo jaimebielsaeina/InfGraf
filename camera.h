@@ -13,6 +13,7 @@ public:
 
 public:
 
+	Camera () {}
 	Camera (const Point& origin, const Direction& left, const Direction& up, const Direction& forward, int width, int height) :
 		o(origin), l(left), u(up), f(forward), width(width), height(height),
 		widthPerPixel(2*toVec4(left).mod() / width), heightPerPixel(2*toVec4(up).mod() / height)

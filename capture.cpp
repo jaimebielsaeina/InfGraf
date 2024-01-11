@@ -2,12 +2,15 @@
 #include "figure.h"
 #include "camera.h"
 #include "randomGenerator.h"
+#include "sceneLoader.h"
+#include "spaceSectioner.h"
 #include <list>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <thread>
+#include <sstream>
 
 using namespace std;
 
@@ -37,7 +40,7 @@ Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& h
 
 }
 
-void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, int maxBounces, int minH, int maxH, std::vector<Color>& pixelsValue) {
+void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, int maxBounces, int minX, int maxX, int minY, int maxY, std::vector<Color>& pixelsValue) {
 	
 	Vec4 modL = camera.l.normalize();					// Get L and U normalized vectors.
     Vec4 modU = camera.u.normalize();
@@ -53,9 +56,9 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 	Color scatter;										// Stores the color of the light scattered by the figure.
 	Phenomenom ph;
 	
-	for (int i = minH; i < maxH; i++) {
+	for (int i = minX; i < maxX; i++) {
 		//cout << i << endl;
-		for (int j = 0; j < camera.width; j++) {
+		for (int j = minY; j < maxY; j++) {
 			pxColor = Color();
 			for (int k = 0; k < raysPerPixel; k++) {
 
@@ -129,6 +132,12 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 	}
 }
 
+void captureSlave (Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, int maxBounces, SpaceSectioner& tiles, vector<Color>& pixelsValue) {
+	int minX, maxX, minY, maxY;
+	while (tiles.getSection(minX, maxX, minY, maxY))
+		captureSection(camera, figures, lightSources, raysPerPixel, maxBounces, minX, maxX, minY, maxY, pixelsValue);
+}
+
 // Capture the scene from the camera's point of view
 void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, int maxBounces, int threads, string fileName) {
 
@@ -140,16 +149,17 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 	//output << "# MAX" << endl;
 	output << camera.width << " " << camera.height << endl;
 	
-
 	// Structure to store the final image.
 	vector<Color> finalImage(camera.height * camera.width);
+
+	SpaceSectioner tiles(camera.width, camera.height, threads, threads);
 
 	// Divide the work between the threads. Each one will capture a section of the image.
 	vector<thread> threadsArray(threads);
 	for (int t = 0; t < threads; t++) {
 		int minH = t * camera.height / threads;
 		int maxH = (t + 1) * camera.height / threads;
-		threadsArray[t] = thread(&captureSection, ref(camera), ref(figures), ref(lightSources), raysPerPixel, maxBounces, minH, maxH, ref(finalImage));
+		threadsArray[t] = thread(&captureSlave, ref(camera), ref(figures), ref(lightSources), raysPerPixel, maxBounces, ref(tiles), ref(finalImage));
 	}
 
 	// Wait for all threads to finish.
@@ -186,59 +196,15 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	// Defining the camera.
-	Direction l = Direction(-1, 0, 0); // l.rotateY(-15);
-	Direction u = Direction(0, 1, 0); // u.rotateY(-15);
-	Direction f = Direction(0, 0, 3); // f.rotateY(-15);
-    Camera camera = Camera(Point(0, 0, -3.5), l, u, f, 512, 512);
-	
-	// Defining the scene.
+	// Camera, list of figures and light sources.
+    Camera camera;
     list<Figure*> listFigures = {};
-
-	// Defining the figures.
-	Plane* leftPlane = new Plane(Direction(1, 0, 0), 1, Color(1, 0, 0), Color(0), Color(0), Color(0), 0);
-	Plane* rightPlane = new Plane(Direction(-1, 0, 0), 1, Color(0, 1, 0), Color(0), Color(0), Color(0), 0);
-	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(1), Color(0), Color(0), Color(0), 0);
-	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0), Color(0), Color(0), Color(1), 0);
-	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(1), Color(0), Color(0), Color(0), 0); // 0,8
-
-	//Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.72, 0.95), 1, 0, 0, 0);
-	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.2765, 0.5, 0.5), Color(0.5), Color(0), Color(0), 0);
-	//Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0.72, 0.94, 0.95), 1, 0, 0, 0);
-	Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0.2), Color(0.8), Color(0), 1.5);
-
-	/*
-	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 1), Point(-0.25, 1, 0), Color(1, 0.5, 0), 1, 0, 0, 0);
-
-	Disc* disc = new Disc(Point(-0.6, 0.6, 0), Direction(-2, 1, 1), 0.2, Color(0, 1, 1), 1, 0, 0, 0);
-	PerforedDisc* perforedDisc = new PerforedDisc(Point(-0.6, 0.2, -0.2), Direction(1, 1, 1), 0.3, 0.2, Color(0, 1, 1), 1, 0, 0, 0);
-
-	Cylinder* cylinder = new Cylinder(Point(-0.5, 0, 0.4), Direction(0, 0, 1), 0.2, 1.5, Color(0.5, 0, 1), 1, 0, 0, 0);
-
-	Cone* cone = new Cone (Point(0.5, -0.5, 0), Direction(0, 1, -0.2), 0.5, 0.5, Color(1, 0.5, 0), 1, 0, 0, 0);
-	*/
-    listFigures.push_back(leftPlane);
-    listFigures.push_back(rightPlane);
-    listFigures.push_back(floorPlane);
-    listFigures.push_back(ceilingPlane);
-    listFigures.push_back(backPlane);
-
-    listFigures.push_back(leftSphere);
-    listFigures.push_back(rightSphere);
-	
-	// listFigures.push_back(centerSphere);
-
-	// listFigures.push_back(triangle);
-	// listFigures.push_back(disc);
-	// listFigures.push_back(perforedDisc);
-	// listFigures.push_back(cylinder);
-	// listFigures.push_back(cone);
-	
-	// Defining the light sources.
 	vector<LightSource> lightSources = {};
-	lightSources.push_back(LightSource(Point(0, 0.5, 0), Color(0.99, 0.99, 0.99)));
-	//lightSources.push_back(LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
 
-	// Capturing the scene and storing it at the specified file.
+	// Populate the camera, lights and figures.
+	populateList (camera, listFigures, lightSources, "scene.objx", true);
+
+	// Capture the scene and store it at the specified file.
     capture(camera, listFigures, lightSources, stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[1]);
+
 }

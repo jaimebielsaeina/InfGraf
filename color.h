@@ -85,6 +85,11 @@ public:
         o << c.c[0] << " " << c.c[1] << " " << c.c[2];
         return o;
     }
+
+    friend istream &operator>> (istream &i, Color &c){
+        i >> c.c[0] >> c.c[1] >> c.c[2];
+        return i;
+    }
     
 };
 

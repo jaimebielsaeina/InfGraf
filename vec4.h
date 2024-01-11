@@ -66,16 +66,16 @@ public:
     }
 
     friend Vec4 operator+ (const Vec4 &c1, const Vec4 &c2) {
-        if(c2.isPoint){
+        /*if(c2.isPoint){
             cout << "Error: second operand must be a direction.\n";
-        }
+        }*/
         return Vec4(c1.x + c2.x, c1.y + c2.y, c1.z + c2.z, c1.isPoint);
     }
 
     friend Vec4 operator- (const Vec4 &c1, const Vec4 &c2) {
-        if(c2.isPoint){
+        /*if(c2.isPoint){
             cout << "Error: second operand must be a direction.\n";
-        }
+        }*/
         return Vec4(c1.x - c2.x, c1.y - c2.y, c1.z - c2.z, c1.isPoint);
     }
 
@@ -84,16 +84,16 @@ public:
     }
 
     friend Vec4 distance (Vec4 p1, Vec4 p2) {
-        if (!p1.isPoint || !p2.isPoint) {
+        /*if (!p1.isPoint || !p2.isPoint) {
             cout << "Error: both operands must be points.\n";
-        }
+        }*/
         return Vec4(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z, 0);
     }
 
     friend Vec4 operator* (const Vec4 &c, const double &s) {
-        if(c.isPoint){
+        /*if(c.isPoint){
             cout << "Error: Vec4 operand must be a direction.\n";
-        }
+        }*/
         return Vec4(c.x * s, c.y * s, c.z * s, 0);
     }
 
@@ -102,9 +102,9 @@ public:
     }
 
     friend Vec4 operator/ (const Vec4 &c, const double &s) {
-        if(c.isPoint){
+        /*if(c.isPoint){
             cout << "Error: Vec4 operand must be a direction.\n";
-        }
+        }*/
         return Vec4(c.x / s, c.y / s, c.z / s, 0);
     }
 
@@ -113,30 +113,30 @@ public:
     }
 
     float mod() const {
-        if (isPoint) {
+        /*if (isPoint) {
             cout << "Error: Vec4 operand must be a direction.\n";
-        }
+        }*/
         return sqrt(x * x + y * y + z * z);
     }
 
     Vec4 normalize() const {
-        if (isPoint) {
+        /*if (isPoint) {
             cout << "Error: Vec4 operand must be a direction.\n";
-        }
+        }*/
         return *this / mod();
     }
 
     friend float dot (const Vec4 &c1, const Vec4 &c2) {
-        if(c1.isPoint || c2.isPoint){
+        /*if(c1.isPoint || c2.isPoint){
             cout << "Error: both operands must be directions.\n";
-        }
+        }*/
         return c1.x * c2.x + c1.y * c2.y + c1.z * c2.z;
     }
 
     friend Vec4 cross (const Vec4 &c1, const Vec4 &c2) {
-        if(c1.isPoint || c2.isPoint){
+        /*if(c1.isPoint || c2.isPoint){
             cout << "Error: both operands must be directions.\n";
-        }
+        }*/
         return Vec4 (c1.y * c2.z - c1.z * c2.y, 
                      c1.z * c2.x - c1.x * c2.z, 
                      c1.x * c2.y - c1.y * c2.x, 
@@ -187,9 +187,9 @@ public:
     }
 
     void baseChange (Vec4 o, Vec4 u, Vec4 v, Vec4 w) {
-        if (!o.isPoint || u.isPoint || v.isPoint || w.isPoint) {
+        /*if (!o.isPoint || u.isPoint || v.isPoint || w.isPoint) {
             cout << "Error.\n";
-        }
+        }*/
         Matrix m = Matrix();
         m.set(0, 0, u.x);
         m.set(1, 0, u.y);
@@ -209,9 +209,9 @@ public:
     }
 
     void baseChangeInverted (Vec4 o, Vec4 u, Vec4 v, Vec4 w) {
-        if (!o.isPoint || u.isPoint || v.isPoint || w.isPoint) {
+        /*if (!o.isPoint || u.isPoint || v.isPoint || w.isPoint) {
             cout << "Error.\n";
-        }
+        }*/
         Matrix m = Matrix();
         m.set(0, 0, u.x);
         m.set(1, 0, u.y);
@@ -251,9 +251,9 @@ public:
 
     // devuelve el angulo entre dos direcciones en radianes
     friend double angleBetweenDirections (const Vec4 &c1, const Vec4 &c2) {
-        if(c1.isPoint || c2.isPoint){
+        /*if(c1.isPoint || c2.isPoint){
             cout << "Error: both operands must be directions.\n";
-        }
+        }*/
         return acos(dot(c1, c2) / (c1.mod() * c2.mod()));
     }
 
@@ -270,6 +270,10 @@ public:
     Point (Vec4 v) : Vec4(v.getX(), v.getY(), v.getZ(), 1) {}
     friend Vec4 toVec4 (Point p) {
         return Vec4(p.getX(), p.getY(), p.getZ(), 1);
+    }
+    friend istream &operator>> (istream &i, Point &p) {
+        i >> p.x >> p.y >> p.z;
+        return i;
     }
 };
 
@@ -291,6 +295,10 @@ public:
             z = randTheta2.get();
         }
         return Direction(x, y, z).normalize();
+    }
+    friend istream &operator>> (istream &i, Direction &d) {
+        i >> d.x >> d.y >> d.z;
+        return i;
     }
 };
 

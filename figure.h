@@ -306,9 +306,10 @@ class Triangle : public Figure {
 
 public:
 
-    Triangle(const Point& p1, const Point& p2, const Point& p3, const Color& color,
-            const float diffuse, const float reflex, const float refract, const float light) :
-            p1(p1), p2(p2), p3(p3), Figure(color, diffuse, reflex, refract, light),
+    Triangle(const Point& p1, const Point& p2, const Point& p3, const Color& diffuse,
+            const Color& reflex, const Color& refract, const Color& light,
+            const float nCoef) :
+            p1(p1), p2(p2), p3(p3), Figure(diffuse, reflex, refract, light, nCoef),
             n(cross(distance(p2, p1), distance(p3, p1))),
             d(dot(n, distance(p1, Point(0, 0, 0)))) {}
 
@@ -349,9 +350,10 @@ class Disc : public Figure {
     float r, d;
 
 public:
-    Disc (const Point& center, const Direction& normal, float radius, const Color& color,
-            const float diffuse, const float reflex, const float refract, const float light)
-        : c(center), n(normal.normalize()), r(radius), d(dot(n, distance(Point(0, 0, 0), center))), Figure(color, diffuse, reflex, refract, light) {}
+    Disc (const Point& center, const Direction& normal, float radius, const Color& diffuse,
+            const Color& reflex, const Color& refract, const Color& light,
+            const float nCoef)
+        : c(center), n(normal.normalize()), r(radius), d(dot(n, distance(Point(0, 0, 0), center))), Figure(diffuse, reflex, refract, light, nCoef) {}
 
     Direction getNormal(const Point& p) const {
         return n;
@@ -383,9 +385,10 @@ class PerforedDisc : public Figure {
     float r, rp, d;
 
 public:
-    PerforedDisc (const Point& center, const Direction& normal, float radius, float radiusPerforation, const Color& color,
-            const float diffuse, const float reflex, const float refract, const float light)
-        : c(center), n(normal.normalize()), r(radius), rp(radiusPerforation), d(dot(n, distance(Point(0, 0, 0), center))), Figure(color, diffuse, reflex, refract, light) {}
+    PerforedDisc (const Point& center, const Direction& normal, float radius, float radiusPerforation, const Color& diffuse,
+            const Color& reflex, const Color& refract, const Color& light,
+            const float nCoef)
+        : c(center), n(normal.normalize()), r(radius), rp(radiusPerforation), d(dot(n, distance(Point(0, 0, 0), center))), Figure(diffuse, reflex, refract, light, nCoef) {}
 
     Direction getNormal(const Point& p) const {
         return n;
@@ -418,9 +421,10 @@ class Cylinder : public Figure {
     float h;      // Altura del cilindro
 
 public:
-    Cylinder (const Point& center, const Direction& axis, float radius, float height, const Color& color,
-            const float diffuse, const float reflex, const float refract, const float light)
-        : c(center), ax(axis.normalize()), r(radius), h(height/2), Figure(color, diffuse, reflex, refract, light) {}
+    Cylinder (const Point& center, const Direction& axis, float radius, float height, const Color& diffuse,
+            const Color& reflex, const Color& refract, const Color& light,
+            const float nCoef)
+        : c(center), ax(axis.normalize()), r(radius), h(height/2), Figure(diffuse, reflex, refract, light, nCoef) {}
 
     Direction getNormal(const Point& p) const {
         return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
@@ -493,10 +497,11 @@ class Cone : public Figure {
 
 public:
 
-    Cone (const Point& center, const Direction& axis, float radius, float height, const Color& color,
-            const float diffuse, const float reflex, const float refract, const float light)
+    Cone (const Point& center, const Direction& axis, float radius, float height, const Color& diffuse,
+            const Color& reflex, const Color& refract, const Color& light,
+            const float nCoef)
         : c(center), ax(axis.normalize()), r(radius), h(height), c2 (center+ax*height),
-          h2(sqrt(r*r+h*h)), Figure(color, diffuse, reflex, refract, light) {}
+          h2(sqrt(r*r+h*h)), Figure(diffuse, reflex, refract, light, nCoef) {}
 
     Direction getNormal(const Point& p) const {
         return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
