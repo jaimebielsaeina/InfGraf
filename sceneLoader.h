@@ -11,7 +11,7 @@
 #include "figure.h"
 #include "lightSource.h"
 
-void populateList (Camera& camera, list<Figure*>& listFigures, vector<LightSource>& lightSources, string fileName, bool lightAreas) {
+void populateList (Camera& camera, list<Figure*>& listFigures, vector<LightSource>& lightSources, int& raysPerPixel, int& threads, int& photons, string fileName, bool lightAreas) {
 
 	vector <Point> points;
 	vector <Direction> dirs;
@@ -25,6 +25,8 @@ void populateList (Camera& camera, list<Figure*>& listFigures, vector<LightSourc
 	float f1, f2, n;
 	int i1, i2, i3, i4, i5, i6;
 	stringstream ss;
+	uint16_t id;
+	
 	while (getline(file, line)) {
 		ss = stringstream(line);
 		ss >> type;
@@ -50,39 +52,39 @@ void populateList (Camera& camera, list<Figure*>& listFigures, vector<LightSourc
 			cout << "aspecto" << colors[i1] << colors[i2] << colors[i3] << colors[i4] << n << endl;
 		// pl plane
 		} else if (type == "pl") {
-			ss >> i1 >> f1;
-			cout << "plano" << dirs[i1] << f1 << endl;
-			listFigures.push_back(new Plane(dirs[i1], f1, c1, c2, c3, c4, n));
+			ss >> id >> i1 >> f1;
+			cout << "plano" << id << dirs[i1] << f1 << endl;
+			listFigures.push_back(new Plane(id, dirs[i1], f1, c1, c2, c3, c4, n));
 		// t triangle
 		} else if (type == "t") {
-			ss >> i1 >> i2 >> i3;
-			cout << "triangulo" << points[i1] << points[i2] << points[i3] << endl;
-			listFigures.push_back(new Triangle(points[i1], points[i2], points[i3], c1, c2, c3, c4, n));
+			ss >> id >> i1 >> i2 >> i3;
+			cout << "triangulo" << id << points[i1] << points[i2] << points[i3] << endl;
+			listFigures.push_back(new Triangle(id, points[i1], points[i2], points[i3], c1, c2, c3, c4, n));
 		// sp sphere
 		} else if (type == "sp") {
-			ss >> i1 >> f1;
+			ss >> id >> i1 >> f1;
 			cout << "esfera" << points[i1] << f1 << endl;
-			listFigures.push_back(new Sphere(points[i1], f1, c1, c2, c3, c4, n));
+			listFigures.push_back(new Sphere(id, points[i1], f1, c1, c2, c3, c4, n));
 		// cn cone
 		} else if (type == "cn") {
-			ss >> i1 >> i2 >> f1 >> f2;
+			ss >> id >> i1 >> i2 >> f1 >> f2;
 			cout << "cono" << points[i1] << dirs[i2] << f1 << f2 << endl;
-			listFigures.push_back(new Cone(points[i1], dirs[i2], f1, f2, c1, c2, c3, c4, n));
+			listFigures.push_back(new Cone(id, points[i1], dirs[i2], f1, f2, c1, c2, c3, c4, n));
 		// cl cilinder
 		} else if (type == "cl") {
-			ss >> i1 >> i2 >> f1 >> f2;
+			ss >> id >> i1 >> i2 >> f1 >> f2;
 			cout << "cilindro" << points[i1] << dirs[i2] << f1 << f2 << endl;
-			listFigures.push_back(new Cylinder(points[i1], dirs[i2], f1, f2, c1, c2, c3, c4, n));
+			listFigures.push_back(new Cylinder(id, points[i1], dirs[i2], f1, f2, c1, c2, c3, c4, n));
 		// ds disc
 		} else if (type == "ds") {
-			ss >> i1 >> i2 >> f1;
+			ss >> id >> i1 >> i2 >> f1;
 			cout << "disco" << points[i1] << dirs[i2] << f1 << endl;
-			listFigures.push_back(new Disc(points[i1], dirs[i2], f1, c1, c2, c3, c4, n));
+			listFigures.push_back(new Disc(id, points[i1], dirs[i2], f1, c1, c2, c3, c4, n));
 		// pd perfored disc
 		} else if (type == "pd") {
-			ss >> i1 >> i2 >> f1 >> f2;
+			ss >> id >> i1 >> i2 >> f1 >> f2;
 			cout << "disco perforado" << points[i1] << dirs[i2] << f1 << f2 << endl;
-			listFigures.push_back(new PerforedDisc(points[i1], dirs[i2], f1, f2, c1, c2, c3, c4, n));
+			listFigures.push_back(new PerforedDisc(id, points[i1], dirs[i2], f1, f2, c1, c2, c3, c4, n));
 		// cam camera
 		} else if (type == "cam") {
 			ss >> i1 >> i2 >> i3 >> i4 >> i5 >> i6;
@@ -93,6 +95,24 @@ void populateList (Camera& camera, list<Figure*>& listFigures, vector<LightSourc
 			ss >> i1 >> i2;
 			cout << "fuente de luz" << points[i1] << colors[i2] << endl;
 			lightSources.push_back(LightSource(points[i1], colors[i2]));
+		}
+		// rpp rays per pixel
+		else if (type == "rpp") {
+			ss >> i1;
+			cout << "rayos por pixel" << i1 << endl;
+			raysPerPixel = i1;
+		}
+		// th threads
+		else if (type == "th") {
+			ss >> i1;
+			cout << "hilos" << i1 << endl;
+			threads = i1;
+		}
+		// ph photons
+		else if (type == "ph") {
+			ss >> i1;
+			cout << "fotones" << i1 << endl;
+			photons = i1;
 		}
 	}
 }

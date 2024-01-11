@@ -34,6 +34,7 @@ public:
 class Figure {
 
 public:
+    uint16_t id;
     Color kd, ks, kt, kl;
     float nRefraction;
     Light majorCh;
@@ -100,25 +101,13 @@ public:
                 res = Direction(randUnit.get(), randUnit.get(), randUnit.get());
         return dot(res, normal) > 0 ? res.normalize() : -res.normalize();
 
-        //Genera un punto aleatorio en la esfera unitaria
-        
-        /*Point randomPoint = BasicPlanet(Point(0,0,0), 1).city(theta, phi);
-        cout << randomPoint.getZ() << endl;
-        //Cambiar la base del punto aleatorio a la base del plano tangente en p
-        Direction normal = this->getNormal(p);
-        Direction perpendicular1 = cross(normal, (dot (normal, Direction(1,0,0)) < 0.9) ?  Direction (1,0,0) : Direction(0,1,0));
-        Direction perpendicular2 = cross(normal, perpendicular1);
-        
-        randomPoint.baseChange(p, perpendicular1, perpendicular2, normal);
-        
-        // returns a random direction in the hemisphere defined by the normal of the figure (getNormal())
-        return distance(randomPoint, p);*/
-
     }
 
     Direction reflectionBounce (const Direction& d, const Point& p) const {
         Direction normal = getNormal(p);
         Direction dNorm = d.normalize();
+        if (dot(dNorm, normal) < 0)
+            normal = -normal;
         return (dNorm - 2 * normal * dot(dNorm, normal)).normalize();
     }
 
@@ -128,66 +117,14 @@ public:
         float cosThetaI = dot(n, wi);
         float sin2ThetaI = max(0.f, 1.0f - cosThetaI * cosThetaI);
         float sin2ThetaT = eta * eta * sin2ThetaI;
-        //if (sin2ThetaT >= 1.0) cout << "problema" << endl;
+        //if (sin2ThetaT >= 1.0) return reflectionBounce(wi, n);
         float cosThetaT = sqrt(1 - sin2ThetaT);
         return eta * -wi + (eta * cosThetaI - cosThetaT) * n;
         
-
-
-
-        // Calcular ángulo de incidencia del vector d con la normal
-        /*
-        double aux;
-        Direction normal = getNormal(p);
-        Direction dNorm = d.normalize();
-        double cosTheta1 = dot(dNorm, normal);
-        if(cosTheta1 < 0) {
-            normal = -normal;
-            cosTheta1 = -cosTheta1;
-        } else {
-            aux = n1;
-            n1 = n2;
-            n2 = aux;
-        }
-        double sinTheta1 = sin(cosTheta1);
-        double cosSinTheta1 = n1 * sinTheta1;
-        double sinTheta2 = n1 * cosSinTheta1 / n2;
-        double angle = asin(sinTheta2);
-        if (sinTheta2 > 1) {
-            //cout << "Total internal reflection\n";
-            return reflectionBounce(d, p);
-        }
-        // Calcular vector de refracción con el angulo calculado
-        Direction perpendicular1 = cross(normal, dNorm);
-        Direction perpendicular2 = cross(normal, perpendicular1);
-        Direction refracted =
-        return refracted.normalize();
-        */
-
-
-
-        /*
-        Direction normal = getNormal(p);
-        Direction dNorm = d.normalize();
-        double thetaI = acos(dot(-dNorm, normal));
-        if (thetaI < 0) {
-            normal = -normal;
-            thetaI = -thetaI;
-            swap(n1, n2);
-        }
-        double thetaR = asin(n1 * sin(acos(thetaI)) / n2);
-        Direction perpendicular1 = cross(normal, dNorm);
-        Direction perpendicular2 = cross(normal, perpendicular1);
-        //if (dot(dNorm, perpendicular2) < 0) perpendicular2 = -perpendicular2;
-        //return -normal * sin(thetaR) + perpendicular2 * cos(thetaR);
-        perpendicular2.rotateZ(thetaR);
-        return perpendicular2;
-        */
-        
     }
 
-    Figure (const Color& diffuse, const Color& reflex, const Color& refract, const Color& light, const float nCoef) :
-            kd(diffuse), ks(reflex), kt(refract), kl(light), nRefraction(nCoef) {
+    Figure (const uint16_t id, const Color& diffuse, const Color& reflex, const Color& refract, const Color& light, const float nCoef) :
+            id(id), kd(diffuse), ks(reflex), kt(refract), kl(light), nRefraction(nCoef) {
         Light lD, lS, lT, lL;
         // Obtiene el canal con mayor contribución
         double maxD = diffuse.maxC(lD);
@@ -218,15 +155,15 @@ class Plane : public Figure {
     float d;
 
 public:
-    Plane (const Direction& normal, float distance, const Color& diffuse,
+    Plane (const uint16_t id, const Direction& normal, float distance, const Color& diffuse,
             const Color& reflex, const Color& refract, const Color& light,
             const float nCoef) :
-            n(normal.normalize()), d(distance), Figure(diffuse, reflex, refract, light, nCoef) {}
+            n(normal.normalize()), d(distance), Figure(id, diffuse, reflex, refract, light, nCoef) {}
 
-    Plane (const Direction& normal, const Point& p, const Color& diffuse,
+    Plane (const uint16_t id, const Direction& normal, const Point& p, const Color& diffuse,
             const Color& reflex, const Color& refract, const Color& light,
             const float nCoef) :
-            n(normal.normalize()), d(abs(dot(n, distance(Point(0,0,0), p)))), Figure(diffuse, reflex, refract, light, nCoef) {}
+            n(normal.normalize()), d(abs(dot(n, distance(Point(0,0,0), p)))), Figure(id, diffuse, reflex, refract, light, nCoef) {}
             
     Direction getNormal(const Point& p) const {
         return n;
@@ -255,13 +192,12 @@ class Sphere : public Figure {
     Color color;
 
 public:
-    Sphere(const Point& c, float r, const Color& diffuse,
+    Sphere(const uint16_t id, const Point& c, float r, const Color& diffuse,
             const Color& reflex, const Color& refract, const Color& light,
             const float nCoef) :
-            c(c), r(r), Figure(diffuse, reflex, refract, light, nCoef) {}
+            c(c), r(r), Figure(id, diffuse, reflex, refract, light, nCoef) {}
 
     Direction getNormal(const Point& p) const {
-        
         return distance(p, c).normalize();
     }
     
@@ -306,10 +242,10 @@ class Triangle : public Figure {
 
 public:
 
-    Triangle(const Point& p1, const Point& p2, const Point& p3, const Color& diffuse,
+    Triangle(const uint16_t id, const Point& p1, const Point& p2, const Point& p3, const Color& diffuse,
             const Color& reflex, const Color& refract, const Color& light,
             const float nCoef) :
-            p1(p1), p2(p2), p3(p3), Figure(diffuse, reflex, refract, light, nCoef),
+            p1(p1), p2(p2), p3(p3), Figure(id, diffuse, reflex, refract, light, nCoef),
             n(cross(distance(p2, p1), distance(p3, p1))),
             d(dot(n, distance(p1, Point(0, 0, 0)))) {}
 
@@ -338,7 +274,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plane in which the triangle is contained
-        return Plane(n, d, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
+        return Plane(id, n, d, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
     }
 
 };
@@ -350,10 +286,10 @@ class Disc : public Figure {
     float r, d;
 
 public:
-    Disc (const Point& center, const Direction& normal, float radius, const Color& diffuse,
+    Disc (const uint16_t id, const Point& center, const Direction& normal, float radius, const Color& diffuse,
             const Color& reflex, const Color& refract, const Color& light,
             const float nCoef)
-        : c(center), n(normal.normalize()), r(radius), d(dot(n, distance(Point(0, 0, 0), center))), Figure(diffuse, reflex, refract, light, nCoef) {}
+        : c(center), n(normal.normalize()), r(radius), d(dot(n, distance(Point(0, 0, 0), center))), Figure(id, diffuse, reflex, refract, light, nCoef) {}
 
     Direction getNormal(const Point& p) const {
         return n;
@@ -374,7 +310,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plani in which the disc is contained
-        return Plane(n, d, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
+        return Plane(id, n, d, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -385,10 +321,10 @@ class PerforedDisc : public Figure {
     float r, rp, d;
 
 public:
-    PerforedDisc (const Point& center, const Direction& normal, float radius, float radiusPerforation, const Color& diffuse,
+    PerforedDisc (const uint16_t id, const Point& center, const Direction& normal, float radius, float radiusPerforation, const Color& diffuse,
             const Color& reflex, const Color& refract, const Color& light,
             const float nCoef)
-        : c(center), n(normal.normalize()), r(radius), rp(radiusPerforation), d(dot(n, distance(Point(0, 0, 0), center))), Figure(diffuse, reflex, refract, light, nCoef) {}
+        : c(center), n(normal.normalize()), r(radius), rp(radiusPerforation), d(dot(n, distance(Point(0, 0, 0), center))), Figure(id, diffuse, reflex, refract, light, nCoef) {}
 
     Direction getNormal(const Point& p) const {
         return n;
@@ -409,7 +345,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         // Gets the plani in which the disc is contained
-        return Plane(n, d, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
+        return Plane(id, n, d, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -421,10 +357,10 @@ class Cylinder : public Figure {
     float h;      // Altura del cilindro
 
 public:
-    Cylinder (const Point& center, const Direction& axis, float radius, float height, const Color& diffuse,
+    Cylinder (const uint16_t id, const Point& center, const Direction& axis, float radius, float height, const Color& diffuse,
             const Color& reflex, const Color& refract, const Color& light,
             const float nCoef)
-        : c(center), ax(axis.normalize()), r(radius), h(height/2), Figure(diffuse, reflex, refract, light, nCoef) {}
+        : c(center), ax(axis.normalize()), r(radius), h(height/2), Figure(id, diffuse, reflex, refract, light, nCoef) {}
 
     Direction getNormal(const Point& p) const {
         return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
@@ -482,7 +418,7 @@ public:
 
     bool planeAgainstLight(const Camera& camera, const LightSource& light, const Point& p) const {
         Direction planeNormal = distance(p, c) - dot(distance(p, c), ax) * ax;
-        return Plane(planeNormal, p, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
+        return Plane(id, planeNormal, p, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
     }
 };
 
@@ -497,11 +433,11 @@ class Cone : public Figure {
 
 public:
 
-    Cone (const Point& center, const Direction& axis, float radius, float height, const Color& diffuse,
+    Cone (const uint16_t id, const Point& center, const Direction& axis, float radius, float height, const Color& diffuse,
             const Color& reflex, const Color& refract, const Color& light,
             const float nCoef)
         : c(center), ax(axis.normalize()), r(radius), h(height), c2 (center+ax*height),
-          h2(sqrt(r*r+h*h)), Figure(diffuse, reflex, refract, light, nCoef) {}
+          h2(sqrt(r*r+h*h)), Figure(id, diffuse, reflex, refract, light, nCoef) {}
 
     Direction getNormal(const Point& p) const {
         return (distance(p, c) - dot(distance(p, c), ax) * ax).normalize();
@@ -552,7 +488,7 @@ public:
         Direction vertexToP = distance(p, c);
         Direction perpendicular2 = cross(vertexToP, distance(c2, c + vertexToP.normalize()*h2));
         Direction planeNormal = cross(vertexToP, perpendicular2).normalize();
-        return Plane(planeNormal, p, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
+        return Plane(id, planeNormal, p, Color(0), Color(0), Color(0), Color(0), 0).planeAgainstLight(camera, light, p);
     }
 };
 

@@ -21,11 +21,36 @@ float gauss (float sigma, float x) {
 	return exp(-0.5 * x * x / sigma / sigma) / (sigma * sqrt(2 * M_PI));
 }
 
+Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& hit,
+					 LightSource& lightSource, const Camera& camera, Color& scatter,
+					 Phenomenom ph, Direction rayDirection) {
+
+	// Check if the plane is against the light.
+	if (figure->planeAgainstLight(camera, lightSource, hit))
+			return Color(0);
+
+	// Check if the point is in shadow.
+	Vec4 distanceToLight = distance(lightSource.center, hit);
+	float modDistanceToLight = distanceToLight.mod();
+	float t;
+	for (Figure* fig : figures)
+			if (fig->intersect(Ray(lightSource.center, -distanceToLight), t)
+			&&	(1 - t) * modDistanceToLight > 1e-6
+			&&	(  fig != figure
+				|| distance(hit, lightSource.center - t*(distanceToLight)).mod() > 1e-4))
+						return Color(0);
+
+	Color Li = lightSource.power / (modDistanceToLight*modDistanceToLight);
+	float cosine = abs(dot(figure->getNormal(hit), distanceToLight.normalize()));
+	return Li * figure->getFr(ph, rayDirection, hit) * cosine * scatter;
+
+}
+
 inline Color photonContribution (const Photon* photon, const Figure* figure, Phenomenom ph, Direction rayDirection, float r) {
 	return figure->getFr(ph, rayDirection, photon->pos) * photon->flux / (M_PI * r * r);
 }
 
-void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, int raysPerPixel, int maxBounces, int minX, int maxX, int minY, int maxY, std::vector<Color>& pixelsValue) {
+void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, PhotonMap photonMap, int raysPerPixel, bool nextEventEstimation, int minX, int maxX, int minY, int maxY, std::vector<Color>& pixelsValue) {
 	
 	Vec4 modL = camera.l.normalize();					// Get L and U normalized vectors.
     Vec4 modU = camera.u.normalize();
@@ -40,6 +65,7 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 	Figure* closestFigure;								// Stores the closest figure to the camera.
 	Color scatter;										// Stores the color of the light scattered by the figure.
 	Phenomenom ph;
+	float radius = 1e-1;
 
 	for (int i = minX; i < maxX; i++) {
 		for (int j = minY; j < maxY; j++) {
@@ -47,7 +73,8 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 			for (int k = 0; k < raysPerPixel; k++) {
 				// Ray color which starts being 0.
 				rayColor = Color();
-
+				scatter = Color(1);
+				
 				// Get the direction of the ray.
 				rayDirection = Direction(sightOrigin - (j+rand.get())*camera.widthPerPixel*modL - (i+rand.get())*camera.heightPerPixel*modU);
 				// Build the ray using the camera's origin and the direction.
@@ -68,10 +95,6 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 					ph = closestFigure->getPhenomenom();
 
 					if (ph == NONE) break;
-					else if (ph == LIGHT) {
-						rayColor += closestFigure->kl * scatter * 50;
-						break;
-					} 
 					// REFLECTION
 					else if (ph == REFLECTION) {
 						rayDirection = closestFigure->reflectionBounce(rayDirection, hit);
@@ -80,6 +103,12 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 					} 
 					// DIFFUSE
 					else {
+						if(nextEventEstimation){
+							for(LightSource lightSource : lightSources){
+								rayColor += getColorOfHit(closestFigure, figures, hit, lightSource, camera, scatter, ph, rayDirection);
+							}
+						}
+
 						//cout << "diffuse" << endl;
 						// vector <const Photon*> nearestPhotons = search_nearest(photonMap, hit, 100, 1e-1);
 						vector <const Photon*> nearestPhotons = photonMap.nearest_neighbors(hit, 50, 1e-1);
@@ -88,7 +117,10 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 							Photon p = *photon;
 							//cout << p << endl;
 							//float r = distance(hit, p.pos).mod();
-							rayColor += closestFigure->getFrDiffuse() * p.flux * gauss(0.75, distance(hit, p.pos).mod()/1e-1)/ (M_PI * 1e-1);
+							if(p.figure == closestFigure->id){
+								//rayColor += closestFigure->getFrDiffuse() * p.flux * gauss(0.75, distance(hit, p.pos).mod()/1e-1)/ (M_PI * 1e-1);
+								rayColor += closestFigure->getFrDiffuse() * p.flux / (M_PI * radius * radius) * (1 - distance(hit, p.pos).mod() / 1e-1);
+							}
 						}
 						break;
 					}
@@ -105,14 +137,14 @@ void captureSection(Camera& camera, list<Figure*> figures, PhotonMap photonMap, 
 	}
 }
 
-void captureSlave (Camera& camera, list<Figure*> figures, PhotonMap photonMap, int raysPerPixel, int maxBounces, SpaceSectioner& tiles, vector<Color>& pixelsValue) {
+void captureSlave (Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, PhotonMap photonMap, int raysPerPixel, bool nextEventEstimation, SpaceSectioner& tiles, vector<Color>& pixelsValue) {
 	int minX, maxX, minY, maxY;
 	while (tiles.getSection(minX, maxX, minY, maxY))
-		captureSection(camera, figures, photonMap, raysPerPixel, maxBounces, minX, maxX, minY, maxY, pixelsValue);
+		captureSection(camera, figures, lightSources, photonMap, raysPerPixel, nextEventEstimation, minX, maxX, minY, maxY, pixelsValue);
 }
 
 // Capture the scene from the camera's point of view
-void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int N, int raysPerPixel, int maxBounces, int threads, string fileName) {
+void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int N, int raysPerPixel, int threads, bool nextEventEstimation, string fileName) {
 	float t;											// Stores the distance to the closest figure.
 	// Open the file to write the image.
 	std::ofstream output(fileName);
@@ -145,6 +177,7 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 			dir = dir.randomDirection();
 			Color flux = 4 * M_PI * lightSources[i].power / samplesForLightSource[i];
 			Ray ray = Ray(lightSources[i].center, dir);
+			bool store = !nextEventEstimation;
 			while (true) {				
 
 				float minT = 1e6;
@@ -164,16 +197,18 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 				Phenomenom ph = closestFigure->getPhenomenom();
 				if (ph == REFLECTION) {
 					dir = closestFigure->reflectionBounce(dir, hit);
+					store = true;
 				} else if (ph == REFRACTION) {
 					closestFigure->getFr(ph, dir, hit);
-				} else if (ph == LIGHT) {
-					Photon photon = Photon(hit, dir, flux);
-					photons.push_back(photon);
-					break;
-
-				} else if (ph == DIFFUSE) {
-					Photon photon = Photon(hit, dir, flux);
-					photons.push_back(photon);
+					store = true;
+				} 
+				else if (ph == DIFFUSE) {
+					if(store){
+						Photon photon = Photon(hit, dir, flux, closestFigure->id);
+						photons.push_back(photon);
+					} else {
+						store = true;
+					}
 					flux *= closestFigure->getFr(ph, dir, hit);
 				} else break;
 				hit = hit + 1e-4 * dir;
@@ -191,7 +226,7 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 	for (int t = 0; t < threads; t++) {
 		int minH = t * camera.height / threads;
 		int maxH = (t + 1) * camera.height / threads;
-		threadsArray[t] = thread(&captureSlave, ref(camera), ref(figures), ref(photonMap), raysPerPixel, maxBounces, ref(tiles), ref(finalImage));
+		threadsArray[t] = thread(&captureSlave, ref(camera), ref(figures), ref(lightSources), ref(photonMap), raysPerPixel, nextEventEstimation, ref(tiles), ref(finalImage));
 	}
 	
 	// Wait for all threads to finish.
@@ -222,72 +257,21 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 int main(int argc, char* argv[]) {
 
 	// Check the number of arguments.
-	if (argc != 5) {
-		cout << "Usage: " << argv[0] << " <output_file> <rays per pixel> <max bounces> <number of threads>" << endl;
+	if (argc != 4 || !(argv[3][0] == 'y' || argv[3][0] == 'n')) {
+		cout << "Usage: " << argv[0] << " <scene_file> <output_file> <next_event_estimation y/n>" << endl;
 		return 1;
 	}
-
-	// Defining the camera.
-	/*Direction l = Direction(-1, 0, 0); // l.rotateY(-15);
-	Direction u = Direction(0, 1, 0); // u.rotateY(-15);
-	Direction f = Direction(0, 0, 3); // f.rotateY(-15);
-    Camera camera = Camera(Point(0, 0, -3.5), l, u, f, 512, 512);
-	*/
-	// Defining the scene.
-    //list<Figure*> listFigures = {};
-
-	// Defining the figures.
-	/*Plane* leftPlane = new Plane(Direction(1, 0, 0), 1, Color(1, 0, 0), Color(0), Color(0), Color(0), 0);
-	Plane* rightPlane = new Plane(Direction(-1, 0, 0), 1, Color(0, 1, 0), Color(0), Color(0), Color(0), 0);
-	Plane* floorPlane = new Plane(Direction(0, 1, 0), 1, Color(0.8), Color(0), Color(0), Color(0), 0);
-	Plane* ceilingPlane = new Plane(Direction(0, -1, 0), 1, Color(0.8), Color(0), Color(0), Color(0), 0);
-	Plane* backPlane = new Plane(Direction(0, 0, -1), 1, Color(0.8), Color(0), Color(0), Color(0), 0); // 0,8
-
-	Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.94, 0.16, 0.57), Color(0), Color(0), Color(0), 0);
-	*///Sphere* leftSphere = new Sphere(Point(-0.5, -0.7, 0.25), 0.3, Color(0.2765, 0.5, 0.5), Color(0.5), Color(0), Color(0), 0);
-	//Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0), Color(0.72, 0.94, 0.95), Color(0), 1.5);
-	//Sphere* rightSphere = new Sphere(Point(0.5, -0.7, -0.25), 0.3, Color(0), Color(0.2), Color(0.8), Color(0), 1.5);
-
-	/*
-	Triangle* triangle = new Triangle(Point(-0.25, -0.5, -0.5), Point(1.5, 0, 1), Point(-0.25, 1, 0), Color(1, 0.5, 0), 1, 0, 0, 0);
-
-	Disc* disc = new Disc(Point(-0.6, 0.6, 0), Direction(-2, 1, 1), 0.2, Color(0, 1, 1), 1, 0, 0, 0);
-	PerforedDisc* perforedDisc = new PerforedDisc(Point(-0.6, 0.2, -0.2), Direction(1, 1, 1), 0.3, 0.2, Color(0, 1, 1), 1, 0, 0, 0);
-
-	Cylinder* cylinder = new Cylinder(Point(-0.5, 0, 0.4), Direction(0, 0, 1), 0.2, 1.5, Color(0.5, 0, 1), 1, 0, 0, 0);
-
-	Cone* cone = new Cone (Point(0.5, -0.5, 0), Direction(0, 1, -0.2), 0.5, 0.5, Color(1, 0.5, 0), 1, 0, 0, 0);
-	*/
-    /*listFigures.push_back(leftPlane);
-    listFigures.push_back(rightPlane);
-    listFigures.push_back(floorPlane);
-    listFigures.push_back(ceilingPlane);
-    listFigures.push_back(backPlane);
-
-    listFigures.push_back(leftSphere);
-    listFigures.push_back(rightSphere);*/
-	
-	// listFigures.push_back(centerSphere);
-
-	// listFigures.push_back(triangle);
-	// listFigures.push_back(disc);
-	// listFigures.push_back(perforedDisc);
-	// listFigures.push_back(cylinder);
-	// listFigures.push_back(cone);
-	
-	// Defining the light sources.
-	/*vector<LightSource> lightSources = {};
-	lightSources.push_back(LightSource(Point(0, 0.5, 0), Color(0.99, 0.99, 0.99)));
-	*///lightSources.push_back(LightSource(Point(-0.5, 0, 0.4), Color(1, 1, 1)));
 
 	// Camera, list of figures and light sources.
     Camera camera;
     list<Figure*> listFigures = {};
 	vector<LightSource> lightSources = {};
+	int raysPerPixel, threads, photons;
 
 	// Populate the camera, lights and figures.
-	populateList (camera, listFigures, lightSources, "scene2.objx", false);
-	
+	populateList (camera, listFigures, lightSources, raysPerPixel, threads, photons, argv[1], true);
+
 	// Capturing the scene and storing it at the specified file.
-    capture(camera, listFigures, lightSources, 10000, stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[1]);
+    capture(camera, listFigures, lightSources, photons, raysPerPixel, threads, argv[3][0] == 'y', argv[2]);
+
 }

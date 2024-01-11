@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include "vec4.h"
 #include "figure.h"
 #include "camera.h"
@@ -40,7 +42,7 @@ Color getColorOfHit (const Figure* figure, list<Figure*> figures, const Point& h
 
 }
 
-void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, int maxBounces, int minX, int maxX, int minY, int maxY, std::vector<Color>& pixelsValue) {
+void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, int minX, int maxX, int minY, int maxY, std::vector<Color>& pixelsValue) {
 	
 	Vec4 modL = camera.l.normalize();					// Get L and U normalized vectors.
     Vec4 modU = camera.u.normalize();
@@ -73,7 +75,7 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 				// At first, scatter doesn't affect the total color.
 				scatter = Color(1);
 
-				for (int b = 0; b < maxBounces; ++b) {
+				while (true) {
 
 					minT = 1e6;
 					closestFigure = nullptr;
@@ -132,14 +134,14 @@ void captureSection(Camera& camera, list<Figure*> figures, vector<LightSource> l
 	}
 }
 
-void captureSlave (Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, int maxBounces, SpaceSectioner& tiles, vector<Color>& pixelsValue) {
+void captureSlave (Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, SpaceSectioner& tiles, vector<Color>& pixelsValue) {
 	int minX, maxX, minY, maxY;
 	while (tiles.getSection(minX, maxX, minY, maxY))
-		captureSection(camera, figures, lightSources, raysPerPixel, maxBounces, minX, maxX, minY, maxY, pixelsValue);
+		captureSection(camera, figures, lightSources, raysPerPixel, minX, maxX, minY, maxY, pixelsValue);
 }
 
 // Capture the scene from the camera's point of view
-void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, int maxBounces, int threads, string fileName) {
+void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSources, int raysPerPixel, int threads, string fileName) {
 
 	// Open the file to write the image.
 	std::ofstream output(fileName);
@@ -159,7 +161,7 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 	for (int t = 0; t < threads; t++) {
 		int minH = t * camera.height / threads;
 		int maxH = (t + 1) * camera.height / threads;
-		threadsArray[t] = thread(&captureSlave, ref(camera), ref(figures), ref(lightSources), raysPerPixel, maxBounces, ref(tiles), ref(finalImage));
+		threadsArray[t] = thread(&captureSlave, ref(camera), ref(figures), ref(lightSources), raysPerPixel, ref(tiles), ref(finalImage));
 	}
 
 	// Wait for all threads to finish.
@@ -191,8 +193,8 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 int main(int argc, char* argv[]) {
 
 	// Check the number of arguments.
-	if (argc != 5) {
-		cout << "Usage: " << argv[0] << " <output_file> <rays per pixel> <max bounces> <number of threads>" << endl;
+	if (argc != 3) {
+		cout << "Usage: " << argv[0] << " <scene_file> <output_file>" << endl;
 		return 1;
 	}
 
@@ -200,11 +202,12 @@ int main(int argc, char* argv[]) {
     Camera camera;
     list<Figure*> listFigures = {};
 	vector<LightSource> lightSources = {};
+	int raysPerPixel, threads, photons;
 
 	// Populate the camera, lights and figures.
-	populateList (camera, listFigures, lightSources, "scene.objx", true);
+	populateList (camera, listFigures, lightSources, raysPerPixel, threads, photons, argv[1], true);
 
 	// Capture the scene and store it at the specified file.
-    capture(camera, listFigures, lightSources, stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[1]);
+    capture(camera, listFigures, lightSources, raysPerPixel, threads, argv[2]);
 
 }

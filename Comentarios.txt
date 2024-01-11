@@ -9,3 +9,13 @@
 					g += minT * 100;
 					b += minT * 100 
 					*/
+
+
+Eliminar bucle for max rayos DONE
+Photon mapping solo elegir photones de la figura en la que hace hit el rayo DONE
+kernel DONE
+next-event estimation DONE
+Memorias + presentación
+Limpiar código
+Probar figuras extra
+Medir tiempos
