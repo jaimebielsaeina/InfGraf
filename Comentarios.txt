@@ -17,5 +17,6 @@ kernel DONE
 next-event estimation DONE
 Memorias + presentación
 Limpiar código
-Probar figuras extra
-Medir tiempos
+Probar figuras extra DONE
+Medir tiempos DONE
+Quitar debug de sceneLoader

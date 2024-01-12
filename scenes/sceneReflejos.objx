@@ -1,0 +1,38 @@
+rpp 128
+th 16
+p 0 0 -3.5 // Punto[0]
+d -1 0 0 // Dirección[0]
+d 0 1 0 // Dirección[1]
+d 0 0 3 // Dirección[2]
+cam 0 0 1 2 256 256
+p 0 0.5 0 // Punto[1]
+c 0 0 0 // Color[0] -> Negro
+c 0.99 0.99 0.99 // Color[1] -> Blanco
+ls 1 1
+d 1 0 0 // Dirección[3]
+d -1 0 0 // Dirección[4]
+d 0 1 0 // Dirección[5]
+d 0 -1 0 // Dirección[6]
+d 0 0 -1 // Dirección[7]
+p -0.5 -0.7 0.25 // Punto[2]
+p 0.5 -0.7 -0.25 // Punto[3]
+c 0.8 0 0 // Color[2] -> Rojo
+c 0 0.8 0 // Color[3] -> Verde
+c 0.8 0.8 0.8 // Color[4] -> Gris
+c 0.2765 0.5 0.5 // Color[5]
+c 0.5 0.5 0.5 // Color[6]
+c 0.2 0.2 0.2 // Color[7]
+c 0.81 0.17 0.71 // Color[8] -> Morado
+c 0.23 0.83 0.75 // Color[9] -> Azul claro
+a 2 0 0 0 0 
+pl 0 3 1
+a 3 0 0 0 0
+pl 1 4 1
+a 4 0 0 0 0
+pl 2 5 1
+pl 4 7 1
+a 0 0 0 1 0
+pl 3 6 1
+a 0 4 0 0 0
+sp 5 2 0.3
+sp 6 3 0.3

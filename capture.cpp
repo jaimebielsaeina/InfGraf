@@ -1,11 +1,9 @@
-#define _USE_MATH_DEFINES
-
-#include "vec4.h"
-#include "figure.h"
-#include "camera.h"
-#include "randomGenerator.h"
-#include "sceneLoader.h"
-#include "spaceSectioner.h"
+#include "coordinates/vec4.h"
+#include "scene/figure.h"
+#include "scene/camera.h"
+#include "utilities/randomGenerator.h"
+#include "scene/sceneLoader.h"
+#include "utilities/spaceSectioner.h"
 #include <list>
 #include <iostream>
 #include <fstream>
@@ -13,6 +11,7 @@
 #include <vector>
 #include <thread>
 #include <sstream>
+#include <ctime>
 
 using namespace std;
 
@@ -191,7 +190,7 @@ void capture(Camera& camera, list<Figure*> figures, vector<LightSource> lightSou
 }
 
 int main(int argc, char* argv[]) {
-
+	unsigned t0, t1;
 	// Check the number of arguments.
 	if (argc != 3) {
 		cout << "Usage: " << argv[0] << " <scene_file> <output_file>" << endl;
@@ -205,9 +204,19 @@ int main(int argc, char* argv[]) {
 	int raysPerPixel, threads, photons;
 
 	// Populate the camera, lights and figures.
+	t0 = clock();
 	populateList (camera, listFigures, lightSources, raysPerPixel, threads, photons, argv[1], true);
+	t1 = clock();
+
+	double time = (double(t1-t0)/CLOCKS_PER_SEC);
+	cout << "File reading time: " << time << endl;
 
 	// Capture the scene and store it at the specified file.
+	t0 = clock();
     capture(camera, listFigures, lightSources, raysPerPixel, threads, argv[2]);
+	t1 = clock();
+
+	time = (double(t1-t0)/CLOCKS_PER_SEC);
+	cout << "Execution time: " << time << endl;
 
 }

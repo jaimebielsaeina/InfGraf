@@ -1,13 +1,11 @@
-#define _USE_MATH_DEFINES
-
-#include "vec4.h"
-#include "figure.h"
-#include "camera.h"
-#include "randomGenerator.h"
-#include "photon.h"
-#include "photonMap.h"
-#include "sceneLoader.h"
-#include "spaceSectioner.h"
+#include "coordinates/vec4.h"
+#include "scene/figure.h"
+#include "scene/camera.h"
+#include "utilities/randomGenerator.h"
+#include "photon/photon.h"
+#include "photon/photonMap.h"
+#include "scene/sceneLoader.h"
+#include "utilities/spaceSectioner.h"
 #include <list>
 #include <iostream>
 #include <fstream>
