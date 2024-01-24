@@ -34,7 +34,6 @@ class Planet {
 public:
     // guarda el centro, el eje  y el meridiano como el angulo de desplaxamiento respecto del eje y
     Planet (Point center, Direction axis, Point meridian) : center(center), axis(axis), meridian(meridian) {
-        //cout << (distance(center, meridian)).mod() << " " << axis.mod()/2 << endl;
         if (abs((distance(center, meridian)).mod() - axis.mod()/2) > 0.000001) {
             cout << "La ciudad de referencia no está en la superficie del planeta." << endl;
             exit(1);

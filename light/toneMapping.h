@@ -9,393 +9,472 @@
 #include <string>
 using namespace std;
 
-void clamping(double &r, double &g, double &b){
-    if (r > 1) r = 1;
-    if (g > 1) g = 1;
-    if (b > 1) b = 1;
+// Clamps the values of the pixels between 0 and 1, transforming higher values
+// into 1.
+void clamping(double &r, double &g, double &b) {
+	if (r > 1) r = 1;
+	if (g > 1) g = 1;
+	if (b > 1) b = 1;
 }
 
+
+// Transforms a ppm file into another with the same content but with the values
+// of the pixels between 0 and 1, following a clampling transformation.
 void transform_clamping(string inFile, string outFile) {
-    int w, h;
-    double m, c;
-    bool still = true;
-    // reads a ppm file
-    ifstream ifs(inFile);
-    // writes a ppm file
-    ofstream ofs(outFile);
-    // reads the header
-    string header;
-    getline(ifs, header);
-    ofs << header << endl;
-    // lee la siguiente linea; si es un comentario, lo ignora a no ser que sea #MAX
-    string line;
-    while (still) {
-        getline(ifs, line);
-        if (line[0] != '#') {
-            still = false;
-        } else if (line.substr(0, 5) == "#MAX=") {
-            ofs << "#MAX=1\n";
-            m = stod(line.substr(5, -1));
-        } else {
-            ofs << line << endl;
-        }
-    }
-    // lee el ancho y el alto
-    w = stoi(line.substr(0, line.find(' ')));
-    h = stoi(line.substr(line.find(' ') + 1, -1));
 
-    ofs << w << " " << h << endl;
-    // lee el valor de c
-    getline(ifs, line);
-    c = stod(line);
+	int w, h;
+	double m = 1, c;
+	bool still = true;
 
-    ofs << 255 << endl;
+	// Opening files.
+	ifstream ifs(inFile);
+	ofstream ofs(outFile);
 
-    double r, g, b;
+	if (!ifs.is_open()) {
+		cerr << "Error opening file \"" << inFile << "\"" << endl;
+		exit(1);
+	}
+	if (!ofs.is_open()) {
+		cerr << "Error opening file \"" << outFile << "\"" << endl;
+		exit(1);
+	}
 
-    // lee el valor de cada pixel
-    for(int i = 0; i < h; i++){
-        for(int j = 0; j < w; j++){
-            ifs >> r >> g >> b;
-            r = r * m / c;
-            g = g * m / c;
-            b = b * m / c;
+	// Reading header.
+	string header;
+	getline(ifs, header);
+	ofs << header << endl;
 
-            clamping(r, g, b);
-            
-            r *= 255;
-            g *= 255;
-            b *= 255;
-            
+	// Reads comment lines and gets MAX value if found.
+	string line;
+	while (still) {
+		getline(ifs, line);
+		if (line[0] != '#') {
+			still = false;
+		} else if (line.substr(0, 5) == "#MAX=") {
+			ofs << "#MAX=1\n";
+			m = stod(line.substr(5, -1));
+		} else {
+			ofs << line << endl;
+		}
+	}
 
-            ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
-        }
-        ofs << endl;
-    }
-    
+	// Manages width, height and c value.
+	w = stoi(line.substr(0, line.find(' ')));
+	h = stoi(line.substr(line.find(' ') + 1, -1));
+	ofs << w << " " << h << endl;
 
+	getline(ifs, line);
+	c = stod(line);
+	ofs << 255 << endl;
+
+	double r, g, b;
+
+	// Applies the clamping transformation to each pixel.
+	for(int i = 0; i < h; i++){
+		for(int j = 0; j < w; j++){
+
+			ifs >> r >> g >> b;
+
+			r = r * m / c;
+			g = g * m / c;
+			b = b * m / c;
+
+			clamping(r, g, b);
+			
+			r *= 255;
+			g *= 255;
+			b *= 255;
+			
+			// Writes the new pixel values.
+			ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
+		}
+		ofs << endl;
+	}
 }
 
+// Transforms a ppm file into another with the same content but with the values
+// of the pixels between 0 and 1, dividing each value by the maximum one.
 void equalization(double &r, double &g, double &b, double max){
-    r /= max;
-    g /= max;
-    b /= max;
+	r /= max;
+	g /= max;
+	b /= max;
 }
 
+// Transforms a ppm file into another with the same content but with the values
+// of the pixels between 0 and 1, following a linear transformation.
 void transform_equalization(string inFile, string outFile){
-    int w, h;
-    int counter = 3;
-    double m, c;
-    bool still = true;
-    // reads a ppm file
-    ifstream ifs(inFile);
-    // writes a ppm file
-    ofstream ofs(outFile);
-    // reads the header
-    string header;
-    getline(ifs, header);
-    ofs << header << endl;
-    // lee la siguiente linea; si es un comentario, lo ignora a no ser que sea #MAX
-    string line;
-    while (still) {
-        getline(ifs, line);
-        if (line[0] != '#') {
-            still = false;
-        } else if (line.substr(0, 5) == "#MAX=") {
-            ofs << "#MAX=1\n";
-            m = stod(line.substr(5, -1));
-            counter++;
-        } else {
-            ofs << line << endl;
-            counter++;
-        }
-    }
-    // lee el ancho y el alto
-    w = stoi(line.substr(0, line.find(' ')));
-    h = stoi(line.substr(line.find(' ') + 1, -1));
 
-    ofs << w << " " << h << endl;
-    // lee el valor de c
-    getline(ifs, line);
-    c = stod(line);
+	int w, h;
+	int counter = 3;
+	double m = 1, c;
+	bool still = true;
 
-    ofs << 255 << endl;
+	// Opening files.
+	ifstream ifs(inFile);
+	ofstream ofs(outFile);
 
-    double r, g, b;
-    double max = 0;
-    // lee el valor de cada pixel para encontrar el máximo
-    for (int i = 0; i < h; i++){
-        for (int j = 0; j < w; j++){
-            ifs >> r >> g >> b;
-            r = r * m / c;
-            g = g * m / c;
-            b = b * m / c;
-            if(r > max) max = r;
-            if(g > max) max = g;
-            if(b > max) max = b;
-        }
-    }
+	if (!ifs.is_open()) {
+		cerr << "Error opening file \"" << inFile << "\"" << endl;
+		exit(1);
+	}
+	if (!ofs.is_open()) {
+		cerr << "Error opening file \"" << outFile << "\"" << endl;
+		exit(1);
+	}
 
-    cout << max << endl;
-    // Deja de asociarse con el fichero
-    ifs.close();
-    // Reseteamos el ifstream
-    ifs.open(inFile);
+	// Reading header.
+	string header;
+	getline(ifs, header);
+	ofs << header << endl;
 
-    // Saltamos las lineas previas a los píxeles
-    for (int i = 0; i < counter; i++){
-        getline(ifs, line);
-    }
+	// Reads comment lines and gets MAX value if found.
+	string line;
+	while (still) {
+		getline(ifs, line);
+		if (line[0] != '#') {
+			still = false;
+		} else if (line.substr(0, 5) == "#MAX=") {
+			ofs << "#MAX=1\n";
+			m = stod(line.substr(5, -1));
+			counter++;
+		} else {
+			ofs << line << endl;
+			counter++;
+		}
+	}
 
-    // Aplicamos equalization con el valor máximo obtenido
-    for(int i = 0; i < h; i++){
-        for(int j = 0; j < w; j++){
-            ifs >> r >> g >> b;
+	// Manages, width, height and c value.
+	w = stoi(line.substr(0, line.find(' ')));
+	h = stoi(line.substr(line.find(' ') + 1, -1));
+	ofs << w << " " << h << endl;
 
-            r = r * m / c;
-            g = g * m / c;
-            b = b * m / c;
-            
-            equalization(r, g, b, max);
-            
-            r *= 255;
-            g *= 255;
-            b *= 255;
-            
+	getline(ifs, line);
+	c = stod(line);
+	ofs << 255 << endl;
 
-            ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
-        }
-        ofs << endl;
-    }
+	double r, g, b;
+	double max = 0;
+
+	// Reads each pixel value and finds the maximum value.
+	for (int i = 0; i < h; i++){
+		for (int j = 0; j < w; j++){
+			ifs >> r >> g >> b;
+			if(r > max) max = r;
+			if(g > max) max = g;
+			if(b > max) max = b;
+		}
+	}
+
+	max = max * m / c;
+	cout << "Max value found: " << max << endl;
+
+	// Resets the ifstream.
+	ifs.close();
+	ifs.open(inFile);
+	if (!ifs.is_open()) {
+		cerr << "Error opening file \"" << inFile << "\"" << endl;
+		exit(1);
+	}
+
+	// Ignoring the lines before the pixels.
+	for (int i = 0; i < counter; i++){
+		getline(ifs, line);
+	}
+
+	// Applies the equalization transformation.
+	for(int i = 0; i < h; i++){
+		for(int j = 0; j < w; j++) {
+
+			ifs >> r >> g >> b;
+
+			r = r * m / c;
+			g = g * m / c;
+			b = b * m / c;
+			
+			equalization(r, g, b, max);
+			
+			r *= 255;
+			g *= 255;
+			b *= 255;
+			
+			// Writes the new pixel values.
+			ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
+		}
+		ofs << endl;
+	}
 }
 
-void clamping_equalization(double &r, double &g, double &b, double max){
-    r = r>max ? 1 : r/max;
-    g = g>max ? 1 : g/max;
-    b = b>max ? 1 : b/max;
+// Transforms a ppm file into another with the same content but with the values
+// of the pixels between 0 and 1, dividing each value by the threshold, and
+// reducing it to 1 if higher.
+void clamping_equalization(double &r, double &g, double &b, double threshold){
+	r = r>threshold ? 1 : r/threshold;
+	g = g>threshold ? 1 : g/threshold;
+	b = b>threshold ? 1 : b/threshold;
 }
 
+// Transforms a ppm file into another with the same content but with the values
+// of the pixels between 0 and 1, following a clamping transformation and then
+// an equalization one.
 void transform_clamp_equal(string inFile, string outFile, int threshold){
-    int w, h;
-    int counter = 3;
-    double m, c;
-    bool still = true;
-    // reads a ppm file
-    ifstream ifs(inFile);
-    // writes a ppm file
-    ofstream ofs(outFile);
-    // reads the header
-    string header;
-    getline(ifs, header);
-    ofs << header << endl;
-    // lee la siguiente linea; si es un comentario, lo ignora a no ser que sea #MAX
-    string line;
-    while (still) {
-        getline(ifs, line);
-        if (line[0] != '#') {
-            still = false;
-        } else if (line.substr(0, 5) == "#MAX=") {
-            ofs << "#MAX=1\n";
-            m = stod(line.substr(5, -1));
-            counter++;
-        } else {
-            ofs << line << endl;
-            counter++;
-        }
-    }
-    // lee el ancho y el alto
-    w = stoi(line.substr(0, line.find(' ')));
-    h = stoi(line.substr(line.find(' ') + 1, -1));
 
-    ofs << w << " " << h << endl;
-    // lee el valor de c
-    getline(ifs, line);
-    c = stod(line);
+	int w, h;
+	double m = 1, c;
+	bool still = true;
 
-    ofs << 255 << endl;
+	// Opening files.
+	ifstream ifs(inFile);
+	ofstream ofs(outFile);
 
-    double r, g, b;
+	if (!ifs.is_open()) {
+		cerr << "Error opening file \"" << inFile << "\"" << endl;
+		exit(1);
+	}
+	if (!ofs.is_open()) {
+		cerr << "Error opening file \"" << outFile << "\"" << endl;
+		exit(1);
+	}
 
-    // Aplicamos equalization con el valor aportado como umbral para pasar de equalization a clamping.
-    for(int i = 0; i < h; i++){
-        for(int j = 0; j < w; j++){
-            ifs >> r >> g >> b;
+	// Reading header.
+	string header;
+	getline(ifs, header);
+	ofs << header << endl;
 
-            r = r * m / c;
-            g = g * m / c;
-            b = b * m / c;
-            
-            clamping_equalization(r, g, b, threshold);
-            
-            r *= 255;
-            g *= 255;
-            b *= 255;
-            
+	// Reads comment lines and gets MAX value if found.
+	string line;
+	while (still) {
+		getline(ifs, line);
+		if (line[0] != '#') {
+			still = false;
+		} else if (line.substr(0, 5) == "#MAX=") {
+			ofs << "#MAX=1\n";
+			m = stod(line.substr(5, -1));
+		} else {
+			ofs << line << endl;
+		}
+	}
 
-            ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
-        }
-        ofs << endl;
-    }
+	// Manages width, height and c value.
+	w = stoi(line.substr(0, line.find(' ')));
+	h = stoi(line.substr(line.find(' ') + 1, -1));
+	ofs << w << " " << h << endl;
+
+	getline(ifs, line);
+	c = stod(line);
+	ofs << 255 << endl;
+
+	double r, g, b;
+
+	// Applies the clamping-equalization transformation to each pixel.
+	for(int i = 0; i < h; i++){
+		for(int j = 0; j < w; j++){
+
+			ifs >> r >> g >> b;
+
+			r = r * m / c;
+			g = g * m / c;
+			b = b * m / c;
+
+			clamping_equalization(r, g, b, threshold);
+
+			r *= 255;
+			g *= 255;
+			b *= 255;
+
+			// Writes the new pixel values.
+			ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
+		}
+		ofs << endl;
+	}
 }
 
+// Transforms a ppm file into another with the same content but with the values
+// of the pixels between 0 and 1, rooting each value.
 void gamma(double &r, double &g, double &b, double gamma_coef){
-    double factor = 255.0 / pow(255.0, 1/gamma_coef);
-    r = pow (r, 1/gamma_coef) * factor;
-    g = pow (g, 1/gamma_coef) * factor;
-    b = pow (b, 1/gamma_coef) * factor;
+	double factor = 255.0 / pow(255.0, 1/gamma_coef);
+	r = pow (r, 1/gamma_coef) * factor;
+	g = pow (g, 1/gamma_coef) * factor;
+	b = pow (b, 1/gamma_coef) * factor;
 }
 
+// Transforms a ppm file into another with the same content but with the values
+// of the pixels between 0 and 1, following a gamma transformation.
 void transform_gamma(string inFile, string outFile, double gamma_coef){
-    int w, h;
-    int counter = 3;
-    double m, c;
-    bool still = true;
-    // reads a ppm file
-    ifstream ifs(inFile);
-    // writes a ppm file
-    ofstream ofs(outFile);
-    // reads the header
-    string header;
-    getline(ifs, header);
-    ofs << header << endl;
-    // lee la siguiente linea; si es un comentario, lo ignora a no ser que sea #MAX
-    string line;
-    while (still) {
-        getline(ifs, line);
-        if (line[0] != '#') {
-            still = false;
-        } else if (line.substr(0, 5) == "#MAX=") {
-            ofs << "#MAX=1\n";
-            m = stod(line.substr(5, -1));
-            counter++;
-        } else {
-            ofs << line << endl;
-            counter++;
-        }
-    }
-    // lee el ancho y el alto
-    w = stoi(line.substr(0, line.find(' ')));
-    h = stoi(line.substr(line.find(' ') + 1, -1));
+	
+	int w, h;
+	int counter = 3;
+	double m = 1, c;
+	bool still = true;
 
-    ofs << w << " " << h << endl;
-    // lee el valor de c
-    getline(ifs, line);
-    c = stod(line);
+	// Opening files.
+	ifstream ifs(inFile);
+	ofstream ofs(outFile);
 
-    ofs << 255 << endl;
+	if (!ifs.is_open()) {
+		cerr << "Error opening file \"" << inFile << "\"" << endl;
+		exit(1);
+	}
+	if (!ofs.is_open()) {
+		cerr << "Error opening file \"" << outFile << "\"" << endl;
+		exit(1);
+	}
 
-    double r, g, b;
-    double max = 0;
-    // lee el valor de cada pixel para encontrar el máximo
-    for (int i = 0; i < h; i++){
-        for (int j = 0; j < w; j++){
-            ifs >> r >> g >> b;
-            r = r * m / c;
-            g = g * m / c;
-            b = b * m / c;
-            if(r > max) max = r;
-            if(g > max) max = g;
-            if(b > max) max = b;
-        }
-    }
+	// Reading header.
+	string header;
+	getline(ifs, header);
+	ofs << header << endl;
 
-    cout << max << endl;
-    // Deja de asociarse con el fichero
-    ifs.close();
-    // Reseteamos el ifstream
-    ifs.open(inFile);
+	// Reads comment lines and gets MAX value if found.
+	string line;
+	while (still) {
+		getline(ifs, line);
+		if (line[0] != '#') {
+			still = false;
+		} else if (line.substr(0, 5) == "#MAX=") {
+			ofs << "#MAX=1\n";
+			m = stod(line.substr(5, -1));
+			counter++;
+		} else {
+			ofs << line << endl;
+			counter++;
+		}
+	}
 
-    // Saltamos las lineas previas a los píxeles
-    for (int i = 0; i < counter; i++){
-        getline(ifs, line);
-    }
+	// Manages, width, height and c value.
+	w = stoi(line.substr(0, line.find(' ')));
+	h = stoi(line.substr(line.find(' ') + 1, -1));
+	ofs << w << " " << h << endl;
 
-    // Aplicamos equalization con el valor máximo obtenido
-    // A continuación se aplica la transformación gamma
-    for(int i = 0; i < h; i++){
-        for(int j = 0; j < w; j++){
-            ifs >> r >> g >> b;
+	getline(ifs, line);
+	c = stod(line);
+	ofs << 255 << endl;
 
-            r = r * m / c;
-            g = g * m / c;
-            b = b * m / c;
-            
-            equalization (r, g, b, max);
-            
-            r *= 255;
-            g *= 255;
-            b *= 255;
+	double r, g, b;
+	double max = 0;
 
-            gamma (r, g, b, gamma_coef);
+	// Reads each pixel value and finds the maximum value.
+	for (int i = 0; i < h; i++){
+		for (int j = 0; j < w; j++){
+			ifs >> r >> g >> b;
+			if(r > max) max = r;
+			if(g > max) max = g;
+			if(b > max) max = b;
+		}
+	}
 
-            ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
-        }
-        ofs << endl;
-    }
+	max = max * m / c;
+	cout << "Max value found: " << max << endl;
+
+	// Resets the ifstream.
+	ifs.close();
+	ifs.open(inFile);
+	if (!ifs.is_open()) {
+		cerr << "Error opening file \"" << inFile << "\"" << endl;
+		exit(1);
+	}
+
+	// Ignoring the lines before the pixels.
+	for (int i = 0; i < counter; i++){
+		getline(ifs, line);
+	}
+
+	// Applies equalization then gamma transformation to each pixel.
+	for(int i = 0; i < h; i++){
+		for(int j = 0; j < w; j++) {
+
+			ifs >> r >> g >> b;
+
+			r = r * m / c;
+			g = g * m / c;
+			b = b * m / c;
+			
+			equalization (r, g, b, max);
+			
+			r *= 255;
+			g *= 255;
+			b *= 255;
+
+			gamma (r, g, b, gamma_coef);
+
+			// Writes the new pixel values.
+			ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
+		}
+		ofs << endl;
+	}
 }
 
 void transform_clamp_gamma(string inFile, string outFile, int threshold, double gamma_coef){
-    int w, h;
-    int counter = 3;
-    double m, c;
-    bool still = true;
-    // reads a ppm file
-    ifstream ifs(inFile);
-    // writes a ppm file
-    ofstream ofs(outFile);
-    // reads the header
-    string header;
-    getline(ifs, header);
-    ofs << header << endl;
-    // lee la siguiente linea; si es un comentario, lo ignora a no ser que sea #MAX
-    string line;
-    while (still) {
-        getline(ifs, line);
-        if (line[0] != '#') {
-            still = false;
-        } else if (line.substr(0, 5) == "#MAX=") {
-            ofs << "#MAX=1\n";
-            m = stod(line.substr(5, -1));
-            counter++;
-        } else {
-            ofs << line << endl;
-            counter++;
-        }
-    }
-    // lee el ancho y el alto
-    w = stoi(line.substr(0, line.find(' ')));
-    h = stoi(line.substr(line.find(' ') + 1, -1));
 
-    ofs << w << " " << h << endl;
-    // lee el valor de c
-    getline(ifs, line);
-    c = stod(line);
+	int w, h;
+	double m = 1, c;
+	bool still = true;
 
-    ofs << 255 << endl;
+	// Opening files.
+	ifstream ifs(inFile);
+	ofstream ofs(outFile);
 
-    double r, g, b;
+	if (!ifs.is_open()) {
+		cerr << "Error opening file \"" << inFile << "\"" << endl;
+		exit(1);
+	}
+	if (!ofs.is_open()) {
+		cerr << "Error opening file \"" << outFile << "\"" << endl;
+		exit(1);
+	}
 
-    // Aplicamos equalization con el valor aportado como umbral para pasar de equalization a clamping.
-    for(int i = 0; i < h; i++){
-        for(int j = 0; j < w; j++){
-            ifs >> r >> g >> b;
+	// Reading header.
+	string header;
+	getline(ifs, header);
+	ofs << header << endl;
 
-            r = r * m / c;
-            g = g * m / c;
-            b = b * m / c;
-            
-            clamping_equalization(r, g, b, threshold);
-            
-            r *= 255;
-            g *= 255;
-            b *= 255;
+	// Reads comment lines and gets MAX value if found.
+	string line;
+	while (still) {
+		getline(ifs, line);
+		if (line[0] != '#') {
+			still = false;
+		} else if (line.substr(0, 5) == "#MAX=") {
+			ofs << "#MAX=1\n";
+			m = stod(line.substr(5, -1));
+		} else {
+			ofs << line << endl;
+		}
+	}
 
-            gamma(r, g, b, gamma_coef);
+	// Manages width, height and c value.
+	w = stoi(line.substr(0, line.find(' ')));
+	h = stoi(line.substr(line.find(' ') + 1, -1));
+	ofs << w << " " << h << endl;
 
-            ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
-        }
-        ofs << endl;
-    }
+	getline(ifs, line);
+	c = stod(line);
+	ofs << 255 << endl;
+
+	double r, g, b;
+
+	// Applies clamping-equalization then gamma transformation to each pixel.
+	for(int i = 0; i < h; i++){
+		for(int j = 0; j < w; j++){
+
+			ifs >> r >> g >> b;
+
+			r = r * m / c;
+			g = g * m / c;
+			b = b * m / c;
+			
+			clamping_equalization(r, g, b, threshold);
+			
+			r *= 255;
+			g *= 255;
+			b *= 255;
+
+			gamma(r, g, b, gamma_coef);
+
+			// Writes the new pixel values.
+			ofs << fixed << (int)r << " " << (int)g << " "  << (int)b << "     ";
+		}
+		ofs << endl;
+	}
 }
 
 #endif // TONEMAPPING_H

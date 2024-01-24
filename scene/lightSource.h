@@ -10,14 +10,14 @@ class LightSource {
 
 public:
 
-    // Center of the light source.
-    Point center;
+	// Center of the light source.
+	Point center;
 
-    // Power of the light source.
-    Color power;
+	// Power of the light source.
+	Color power;
 
-    // Constructor.
-    LightSource(const Point& center, const Color& power) : center(center), power(power) {}
+	// Constructor.
+	LightSource(const Point& center, const Color& power) : center(center), power(power) {}
 
 };
 
